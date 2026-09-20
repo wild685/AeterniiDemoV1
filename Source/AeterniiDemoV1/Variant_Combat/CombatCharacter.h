@@ -13,8 +13,10 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
-class UCombatLifeBar;
-class UWidgetComponent;
+  class UCombatLifeBar;
+  class UWidgetComponent;
+  class AActor;
+  class ACombatEnemy;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCombatCharacter, Log, All);
 
@@ -72,6 +74,18 @@ protected:
 	/** Toggle Camera Side Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* ToggleCameraAction;
+
+  	/** Target lock-on Input Action */
+  	UPROPERTY(EditAnywhere, Category ="Input")
+  	UInputAction* LockOnAction;
+
+	/** Magic cast Input Action */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* MagicCastAction;
+
+	/** Projectile class spawned by the basic magic cast */
+	UPROPERTY(EditAnywhere, Category="Magic")
+	TSubclassOf<AActor> MagicProjectileClass;
 
 	/** Max amount of HP the character will have on respawn */
 	UPROPERTY(EditAnywhere, Category="Damage", meta = (ClampMin = 0, ClampMax = 100))
@@ -179,6 +193,22 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Respawn", meta = (ClampMin = 0, ClampMax = 10, Units = "s"))
 	float RespawnTime = 3.0f;
 
+	/** Maximum distance at which an enemy can be acquired by lock-on */
+	UPROPERTY(EditAnywhere, Category="Targeting", meta = (ClampMin = 0, Units = "cm"))
+	float TargetLockRange = 1200.0f;
+
+	/** Half-angle of the forward-facing lock-on acquisition cone */
+	UPROPERTY(EditAnywhere, Category="Targeting", meta = (ClampMin = 0, ClampMax = 89, Units = "deg"))
+	float TargetLockHalfAngle = 60.0f;
+
+	/** Rotation interpolation speed while maintaining a lock-on target */
+	UPROPERTY(EditAnywhere, Category="Targeting", meta = (ClampMin = 0))
+	float TargetLockRotationSpeed = 8.0f;
+
+	/** Current target-lock enemy, if any */
+	UPROPERTY(VisibleAnywhere, Category="Targeting")
+	TObjectPtr<ACombatEnemy> LockedTarget;
+
 	/** Attack montage ended delegate */
 	FOnMontageEnded OnAttackMontageEnded;
 
@@ -212,6 +242,12 @@ protected:
 
 	/** Called for toggle camera side input */
 	void ToggleCamera();
+
+  	/** Called for target lock-on input */
+  	void ToggleLockOn();
+
+	/** Called for basic magic cast input */
+	void CastMagic();
 
 	/** BP hook to animate the camera side switch */
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
@@ -298,6 +334,15 @@ public:
 	/** Called from the respawn timer to destroy and re-create the character */
 	void RespawnCharacter();
 
+	/** Updates the character's facing while a target is locked */
+	void UpdateLockOn(float DeltaSeconds);
+
+	/** Finds the nearest valid enemy inside the acquisition cone and range */
+	ACombatEnemy* FindBestLockOnTarget() const;
+
+	/** Returns whether the current lock-on target is still valid */
+	bool IsLockedTargetValid() const;
+
 public:
 
 	/** Overrides the default TakeDamage functionality */
@@ -320,6 +365,9 @@ protected:
 
 	/** Initialization */
 	virtual void BeginPlay() override;
+
+	/** Per-frame lock-on maintenance */
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** Cleanup */
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

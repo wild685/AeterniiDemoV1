@@ -12,6 +12,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogCombat, Log, All);
+
 ACombatEnemy::ACombatEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -33,7 +35,7 @@ ACombatEnemy::ACombatEnemy()
 	LifeBar->SetupAttachment(RootComponent);
 
 	// set the collision capsule size
-	GetCapsuleComponent()->SetCapsuleSize(35.0f, 90.0f);
+	GetCapsuleComponent()->InitCapsuleSize(35.0f, 90.0f);
 
 	// set the character movement properties
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
@@ -207,6 +209,11 @@ void ACombatEnemy::ApplyDamage(float Damage, AActor* DamageCauser, const FVector
 	// only process knockback and effects if we received nonzero damage
 	if (ActualDamage > 0.0f)
 	{
+		if (DamageCauser && DamageCauser->GetClass()->GetFName() == FName(TEXT("BP_MagicProjectile_C")))
+		{
+			UE_LOG(LogCombat, Log, TEXT("Magic projectile hit enemy for damage."));
+		}
+
 		// apply the knockback impulse
 		GetCharacterMovement()->AddImpulse(DamageImpulse, true);
 

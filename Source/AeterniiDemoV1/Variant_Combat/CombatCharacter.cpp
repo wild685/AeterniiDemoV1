@@ -2,23 +2,47 @@
 
 
 #include "CombatCharacter.h"
+
+DEFINE_LOG_CATEGORY(LogCombatCharacter);
 #include "Components/CapsuleComponent.h"
-#include "Components/WidgetComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
+  #include "Components/WidgetComponent.h"
+  #include "GameFramework/CharacterMovementComponent.h"
+  #include "GameFramework/ProjectileMovementComponent.h"
+  #include "GameFramework/SpringArmComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "CombatLifeBar.h"
+#include "CombatEnemy.h"
 #include "Engine/DamageEvents.h"
+#include "EngineUtils.h"
 #include "TimerManager.h"
 #include "Engine/LocalPlayer.h"
 #include "CombatPlayerController.h"
+#include "UObject/ConstructorHelpers.h"
 
 ACombatCharacter::ACombatCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> LockOnActionFinder(TEXT("/Game/Variant_Combat/Input/Actions/IA_LockOn.IA_LockOn"));
+	if (LockOnActionFinder.Succeeded())
+	{
+		LockOnAction = LockOnActionFinder.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UInputAction> MagicCastActionFinder(TEXT("/Game/Variant_Combat/Input/Actions/IA_MagicCast.IA_MagicCast"));
+	if (MagicCastActionFinder.Succeeded())
+	{
+		MagicCastAction = MagicCastActionFinder.Object;
+	}
+
+	static ConstructorHelpers::FClassFinder<AActor> MagicProjectileClassFinder(TEXT("/Game/Variant_Combat/Magic/BP_MagicProjectile"));
+	if (MagicProjectileClassFinder.Succeeded())
+	{
+		MagicProjectileClass = MagicProjectileClassFinder.Class;
+	}
 
 	// bind the attack montage ended delegate
 	OnAttackMontageEnded.BindUObject(this, &ACombatCharacter::AttackMontageEnded);
@@ -92,19 +116,84 @@ void ACombatCharacter::ToggleCamera()
 	BP_ToggleCamera();
 }
 
+void ACombatCharacter::ToggleLockOn()
+{
+	if (IsLockedTargetValid())
+	{
+		LockedTarget = nullptr;
+		UE_LOG(LogCombatCharacter, Log, TEXT("Lock-on cleared."));
+		return;
+	}
+
+	LockedTarget = FindBestLockOnTarget();
+	UE_LOG(LogCombatCharacter, Log, TEXT("Lock-on %s."), LockedTarget ? TEXT("acquired") : TEXT("failed to acquire target"));
+  }
+
+	void ACombatCharacter::CastMagic()
+	{
+		if (!GetWorld() || !MagicProjectileClass)
+		{
+			UE_LOG(LogCombatCharacter, Warning, TEXT("Magic cast blocked: projectile class is not configured."));
+			return;
+		}
+
+		const FVector SpawnLocation = GetActorLocation() + GetActorForwardVector() * 100.0f + FVector(0.0f, 0.0f, 50.0f);
+		FVector Direction = GetActorForwardVector();
+
+		if (IsLockedTargetValid())
+		{
+			Direction = (LockedTarget->GetActorLocation() - SpawnLocation).GetSafeNormal();
+		}
+
+		if (Direction.IsNearlyZero())
+		{
+			return;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		const FRotator SpawnRotation = Direction.Rotation();
+		AActor* Projectile = GetWorld()->SpawnActor<AActor>(MagicProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
+		if (Projectile)
+		{
+			if (UProjectileMovementComponent* ProjectileMovement = Projectile->FindComponentByClass<UProjectileMovementComponent>())
+			{
+				ProjectileMovement->Velocity = Direction * ProjectileMovement->InitialSpeed;
+			}
+
+			UE_LOG(LogCombatCharacter, Log, TEXT("Magic cast spawned toward %s."), IsLockedTargetValid() ? *LockedTarget->GetName() : TEXT("forward"));
+		}
+	}
+
 void ACombatCharacter::DoMove(float Right, float Forward)
 {
 	if (GetController() != nullptr)
 	{
-		// find out which way is forward
-		const FRotator Rotation = GetController()->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		FVector ForwardDirection;
+		FVector RightDirection;
 
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		if (IsLockedTargetValid())
+		{
+			ForwardDirection = LockedTarget->GetActorLocation() - GetActorLocation();
+			ForwardDirection.Z = 0.0f;
+			ForwardDirection.Normalize();
+			RightDirection = FVector::CrossProduct(FVector::UpVector, ForwardDirection).GetSafeNormal();
+		}
+		else
+		{
+			// find out which way is forward
+			const FRotator Rotation = GetController()->GetControlRotation();
+			const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+			// get forward vector
+			ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+
+			// get right vector
+			RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+		}
 
 		// add movement 
 		AddMovementInput(ForwardDirection, Forward);
@@ -116,10 +205,97 @@ void ACombatCharacter::DoLook(float Yaw, float Pitch)
 {
 	if (GetController() != nullptr)
 	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(Yaw);
+		// While locked, target-facing rotation owns yaw; retain pitch input for camera framing.
+		if (!IsLockedTargetValid())
+		{
+			AddControllerYawInput(Yaw);
+		}
+
 		AddControllerPitchInput(Pitch);
 	}
+}
+
+ACombatEnemy* ACombatCharacter::FindBestLockOnTarget() const
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return nullptr;
+	}
+
+	FVector ForwardDirection = GetControlRotation().Vector();
+	ForwardDirection.Z = 0.0f;
+	ForwardDirection.Normalize();
+
+	const FVector Origin = GetActorLocation();
+	const float MinimumDot = FMath::Cos(FMath::DegreesToRadians(TargetLockHalfAngle));
+	const float MaximumDistanceSquared = FMath::Square(TargetLockRange);
+	float BestDistanceSquared = TNumericLimits<float>::Max();
+	ACombatEnemy* BestTarget = nullptr;
+
+	for (TActorIterator<ACombatEnemy> It(World); It; ++It)
+	{
+		ACombatEnemy* Candidate = *It;
+		if (!IsValid(Candidate) || Candidate->CurrentHP <= 0.0f)
+		{
+			continue;
+		}
+
+		FVector ToCandidate = Candidate->GetActorLocation() - Origin;
+		ToCandidate.Z = 0.0f;
+		const float DistanceSquared = ToCandidate.SizeSquared();
+		if (DistanceSquared <= KINDA_SMALL_NUMBER || DistanceSquared > MaximumDistanceSquared)
+		{
+			continue;
+		}
+
+		ToCandidate.Normalize();
+		if (FVector::DotProduct(ForwardDirection, ToCandidate) < MinimumDot)
+		{
+			continue;
+		}
+
+		if (DistanceSquared < BestDistanceSquared)
+		{
+			BestDistanceSquared = DistanceSquared;
+			BestTarget = Candidate;
+		}
+	}
+
+	return BestTarget;
+}
+
+bool ACombatCharacter::IsLockedTargetValid() const
+{
+	if (!IsValid(LockedTarget) || LockedTarget->CurrentHP <= 0.0f)
+	{
+		return false;
+	}
+
+	return FVector::DistSquared(GetActorLocation(), LockedTarget->GetActorLocation()) <= FMath::Square(TargetLockRange);
+}
+
+void ACombatCharacter::UpdateLockOn(float DeltaSeconds)
+{
+	if (!IsLockedTargetValid() || GetController() == nullptr)
+	{
+		LockedTarget = nullptr;
+		return;
+	}
+
+	FVector ToTarget = LockedTarget->GetActorLocation() - GetActorLocation();
+	ToTarget.Z = 0.0f;
+	if (!ToTarget.Normalize())
+	{
+		return;
+	}
+
+	const FRotator CurrentRotation = GetController()->GetControlRotation();
+	const FRotator DesiredRotation = ToTarget.Rotation();
+	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, DesiredRotation, DeltaSeconds, TargetLockRotationSpeed);
+	NewRotation.Pitch = CurrentRotation.Pitch;
+	NewRotation.Roll = 0.0f;
+	GetController()->SetControlRotation(NewRotation);
 }
 
 void ACombatCharacter::DoComboAttackStart()
@@ -425,6 +601,8 @@ void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVe
 
 void ACombatCharacter::HandleDeath()
 {
+	LockedTarget = nullptr;
+
 	// disable movement while we're dead
 	GetCharacterMovement()->DisableMovement();
 
@@ -521,6 +699,20 @@ void ACombatCharacter::BeginPlay()
 	ResetHP();
 }
 
+void ACombatCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (IsLockedTargetValid())
+	{
+		UpdateLockOn(DeltaSeconds);
+	}
+	else if (LockedTarget != nullptr)
+	{
+		LockedTarget = nullptr;
+	}
+}
+
 void ACombatCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
@@ -552,7 +744,13 @@ void ACombatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		// Camera Side Toggle
 		EnhancedInputComponent->BindAction(ToggleCameraAction, ETriggerEvent::Triggered, this, &ACombatCharacter::ToggleCamera);
-	}
+
+  		// Target Lock-On
+  		EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Started, this, &ACombatCharacter::ToggleLockOn);
+
+		// Magic Cast
+		EnhancedInputComponent->BindAction(MagicCastAction, ETriggerEvent::Started, this, &ACombatCharacter::CastMagic);
+  	}
 }
 
 void ACombatCharacter::NotifyControllerChanged()
