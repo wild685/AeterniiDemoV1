@@ -49,7 +49,6 @@ protected:
 
 	virtual void SpawnEnemy() override;
 
-	UFUNCTION()
 	virtual void OnEnemyDied() override;
 
 	TSubclassOf<ACombatEnemy> PickHordeClass() const;
