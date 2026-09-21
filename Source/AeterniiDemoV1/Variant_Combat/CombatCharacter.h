@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "CombatAttacker.h"
 #include "CombatDamageable.h"
@@ -17,6 +18,10 @@ struct FInputActionValue;
   class UWidgetComponent;
   class AActor;
   class ACombatEnemy;
+class UAbilitySystemComponent;
+class UCombatAbilitySystemComponent;
+class UCombatAttributeSet;
+class UGameplayAbility;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCombatCharacter, Log, All);
 
@@ -29,7 +34,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogCombatCharacter, Log, All);
  *  - Respawning
  */
 UCLASS(abstract)
-class ACombatCharacter : public ACharacter, public ICombatAttacker, public ICombatDamageable
+class ACombatCharacter : public ACharacter, public ICombatAttacker, public ICombatDamageable, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -44,6 +49,10 @@ class ACombatCharacter : public ACharacter, public ICombatAttacker, public IComb
 	/** Life bar widget component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* LifeBar;
+
+	/** GAS-lite ASC. InitAbilityActorInfo runs after possess (and on client OnRep_Controller). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCombatAbilitySystemComponent> AbilitySystemComponent;
 	
 protected:
 
@@ -82,6 +91,10 @@ protected:
 	/** Magic cast Input Action */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* MagicCastAction;
+
+	/** Dodge Input Action. Create IA_Dodge and assign it on BP_CombatCharacter; see Docs/CombatP1.md. */
+	UPROPERTY(EditAnywhere, Category ="Input")
+	UInputAction* DodgeAction;
 
 	/** Projectile class spawned by the basic magic cast */
 	UPROPERTY(EditAnywhere, Category="Magic")
@@ -209,6 +222,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Targeting")
 	TObjectPtr<ACombatEnemy> LockedTarget;
 
+	UPROPERTY()
+	TObjectPtr<UCombatAttributeSet> AttributeSet;
+
+	/** Granted on possess. Empty defaults to GA_Dodge. */
+	UPROPERTY(EditDefaultsOnly, Category="GAS")
+	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
+
+	bool bDefaultAbilitiesGranted = false;
+	bool bHealthDelegateBound = false;
+	bool bIsDead = false;
+
 	/** Attack montage ended delegate */
 	FOnMontageEnded OnAttackMontageEnded;
 
@@ -249,6 +273,9 @@ protected:
 	/** Called for basic magic cast input */
 	void CastMagic();
 
+	/** Called for dodge input */
+	void DodgePressed();
+
 	/** BP hook to animate the camera side switch */
 	UFUNCTION(BlueprintImplementableEvent, Category="Combat")
 	void BP_ToggleCamera();
@@ -278,6 +305,14 @@ public:
 	/** Handles charged attack released from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoChargedAttackEnd();
+
+	/**
+	 *  Player dodge acceptance: activates GA_Dodge via TryActivateAbility.
+	 *  I-frames are ~0.30s starting ~0.05s after dodge starts (ANS_DodgeIFrames).
+	 *  Stamina is stubbed (attribute exists, not spent).
+	 */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoDodge();
 
 protected:
 
@@ -378,6 +413,15 @@ protected:
 	/** Handles possessed initialization */
 	virtual void NotifyControllerChanged() override;
 
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_Controller() override;
+
+	void InitializeAbilitySystem();
+	void GrantDefaultAbilities();
+
+	UFUNCTION()
+	void HandleGASHealthChanged(float NewHealth, float NewMaxHealth);
+
 public:
 
 	/** Returns CameraBoom subobject **/
@@ -385,4 +429,9 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UFUNCTION(BlueprintPure, Category="GAS")
+	bool HasDodgeIFrames() const;
 };
