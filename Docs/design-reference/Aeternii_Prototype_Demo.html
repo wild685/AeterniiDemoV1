@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AETERNII — Vertical Slice</title>
+<style>
+/* ============================================================
+   AETERNII — Cathedral Sci-Fi tactical vertical slice
+   Style law: dark, controlled, high contrast. No bloom, no glow
+   bleed, no particle spam. Magic reads as geometry being edited.
+   ============================================================ */
+
+:root{
+  --void:      #07070a;
+  --stone:     #0d0d11;
+  --stone-2:   #121218;
+  --stone-3:   #17171f;
+  --rule:      #2a2a36;
+  --rule-hot:  #3b3547;
+  --ink:       #b9b3a6;
+  --ink-dim:   #6d6a63;
+  --ink-bright:#e6e0d2;
+
+  --flame:     #c8842a;
+  --flame-hi:  #e8ab4e;
+  --flame-deep:#5a3a12;
+
+  --star:      #7d55a8;
+  --star-hi:   #a982cf;
+  --star-deep: #2d1c44;
+
+  --grid-line: #1e1e27;
+  --tile:      #101014;
+  --tile-alt:  #0c0c10;
+
+  --serif: "Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,"Times New Roman",serif;
+  --mono: ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+
+  /* Depth-driven visual channel (set by JS) */
+  --dp-sat: 1;
+  --dp-con: 1;
+  --dp-bri: 1;
+  --dp-hue: 0deg;
+  --dp-vig: 0.55;
+  --dp-grain: 0.020;
+  --dp-accent: var(--flame);
+  --dp-drift: 0px;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:var(--void);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:15px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+button{ font-family:inherit; color:inherit; }
+::selection{ background:#3a2c14; color:var(--ink-bright); }
+
+/* ---------- shared chrome ---------- */
+.rule{ height:1px; background:linear-gradient(90deg,transparent,var(--rule),transparent); }
+.smallcaps{ font-variant:small-caps; letter-spacing:.14em; }
+.tk{ font-family:var(--mono); font-size:11px; letter-spacing:.10em; text-transform:uppercase; }
+
+.panel{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.014), transparent 40%),
+    var(--stone);
+  border:1px solid var(--rule);
+}
+.panel-hd{
+  padding:8px 12px;
+  border-bottom:1px solid var(--rule);
+  background:var(--stone-2);
+  color:var(--ink-dim);
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+}
+
+/* Cathedral arch corner ticks — restrained ornament */
+.ornament{ position:relative; }
+.ornament::before,.ornament::after{
+  content:""; position:absolute; width:9px; height:9px; pointer-events:none;
+  border-color:var(--rule-hot); border-style:solid; border-width:0;
+}
+.ornament::before{ top:-1px; left:-1px; border-top-width:1px; border-left-width:1px; }
+.ornament::after{ bottom:-1px; right:-1px; border-bottom-width:1px; border-right-width:1px; }
+
+.btn{
+  appearance:none; cursor:pointer;
+  background:linear-gradient(180deg,var(--stone-3),var(--stone));
+  border:1px solid var(--rule-hot);
+  padding:9px 16px;
+  font-variant:small-caps; letter-spacing:.16em; font-size:14px;
+  color:var(--ink);
+  transition:background .16s linear, color .16s linear, border-color .16s linear;
+}
+.btn:hover:not(:disabled){ background:linear-gradient(180deg,#1e1b18,#141210); border-color:var(--flame-deep); color:var(--ink-bright); }
+.btn:active:not(:disabled){ transform:translateY(1px); }
+.btn:disabled{ opacity:.32; cursor:not-allowed; }
+.btn.primary{ border-color:#5a4526; color:var(--flame-hi); }
+.btn.primary:hover:not(:disabled){ background:linear-gradient(180deg,#241a0d,#170f06); border-color:var(--flame); }
+.btn.danger{ border-color:#4a2f5e; color:var(--star-hi); }
+.btn.danger:hover:not(:disabled){ background:linear-gradient(180deg,#1d1329,#120b1a); border-color:var(--star); }
+
+/* =========================================================
+   TITLE SCREEN
+   ========================================================= */
+#title{
+  position:fixed; inset:0; z-index:60;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:
+    radial-gradient(120% 80% at 50% 0%, #12101a 0%, #08080c 55%, #050507 100%);
+  overflow:hidden;
+}
+/* Thin geometric "reality lattice" — lines, not glow */
+#title .lattice{
+  position:absolute; inset:-10%;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(200,132,42,.055) 0 1px, transparent 1px 96px),
+    repeating-linear-gradient(0deg,  rgba(200,132,42,.035) 0 1px, transparent 1px 96px);
+  mask-image:radial-gradient(60% 55% at 50% 45%, #000 0%, transparent 78%);
+  -webkit-mask-image:radial-gradient(60% 55% at 50% 45%, #000 0%, transparent 78%);
+  pointer-events:none;
+}
+#title .arch{
+  position:absolute; top:-8vh; left:50%; transform:translateX(-50%);
+  width:min(78vw,760px); height:86vh;
+  border:1px solid rgba(200,132,42,.13);
+  border-bottom:none;
+  border-radius:50% 50% 0 0 / 42% 42% 0 0;
+  pointer-events:none;
+}
+#title .arch.inner{ width:min(56vw,540px); height:70vh; top:2vh; border-color:rgba(200,132,42,.09); }
+#title .content{ position:relative; text-align:center; padding:0 24px; }
+#title h1{
+  margin:0;
+  font-size:clamp(52px,10vw,116px);
+  letter-spacing:.30em; text-indent:.30em;
+  font-weight:400;
+  color:var(--ink-bright);
+  text-shadow:0 2px 0 #000, 0 0 1px #000;
+}
+#title .sub{ margin-top:6px; color:var(--flame); }
+#title .tagline{
+  margin:30px auto 0; max-width:640px;
+  font-size:clamp(15px,2.1vw,20px); font-style:italic; color:#8e8779;
+  line-height:1.75;
+}
+#title .tagline em{ color:var(--flame-hi); font-style:italic; }
+#title .brief{
+  margin:26px auto 0; max-width:560px; font-size:13px; color:var(--ink-dim); line-height:1.85;
+}
+#title .cta{ margin-top:34px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+#title .btn{ padding:13px 30px; font-size:16px; }
+#title .foot{
+  position:absolute; bottom:16px; left:0; right:0; text-align:center;
+  color:#3d3a35;
+}
+
+/* =========================================================
+   BATTLE LAYOUT
+   ========================================================= */
+#battle{ display:none; height:100%; flex-direction:column; }
+#battle.on{ display:flex; }
+
+#topbar{
+  display:flex; align-items:stretch; justify-content:space-between;
+  border-bottom:1px solid var(--rule);
+  background:linear-gradient(180deg,#0f0f14,#0a0a0e);
+  flex:0 0 auto;
+}
+#topbar .brand{ padding:10px 18px; border-right:1px solid var(--rule); display:flex; align-items:center; gap:14px; }
+#topbar .brand .n{ font-size:20px; letter-spacing:.30em; color:var(--ink-bright); }
+#topbar .brand .r{ color:var(--ink-dim); }
+#topbar .phase{ display:flex; align-items:center; gap:22px; padding:10px 18px; }
+#topbar .phase .v{ color:var(--ink-bright); }
+#topbar .acts{ display:flex; align-items:center; gap:8px; padding:8px 12px; border-left:1px solid var(--rule); }
+
+#stage{ flex:1 1 auto; display:grid; grid-template-columns:300px 1fr 296px; min-height:0; }
+#stage > *{ min-height:0; min-width:0; }
+
+.col{ display:flex; flex-direction:column; gap:0; overflow:hidden; }
+.col.left{ border-right:1px solid var(--rule); }
+.col.right{ border-left:1px solid var(--rule); }
+
+/* ---------- DEPTH STRATUM RAIL ---------- */
+#depthrail{ padding:12px 14px 14px; border-bottom:1px solid var(--rule); background:var(--stone); }
+.depth-layer{
+  display:grid; grid-template-columns:22px 1fr auto; gap:10px; align-items:center;
+  padding:7px 8px; margin-bottom:2px;
+  border:1px solid transparent; border-left:2px solid var(--rule);
+  color:#5f5c56; cursor:default;
+}
+.depth-layer .idx{ font-family:var(--mono); font-size:10px; text-align:center; color:#4a4842; }
+.depth-layer .nm{ font-variant:small-caps; letter-spacing:.12em; font-size:14px; }
+.depth-layer .ef{ font-family:var(--mono); font-size:10px; letter-spacing:.06em; }
+.depth-layer.cur{
+  border-color:var(--rule-hot); border-left-color:var(--dp-accent);
+  background:linear-gradient(90deg, rgba(125,85,168,.10), transparent 70%);
+  color:var(--ink-bright);
+}
+.depth-layer.cur .idx{ color:var(--dp-accent); }
+.depth-layer.past{ color:#4f4c47; border-left-color:#332b3f; }
+
+#depthflavor{ margin-top:8px; font-size:12.5px; font-style:italic; color:#7c7669; line-height:1.65; min-height:34px; }
+#depthctl{ display:flex; gap:6px; margin-top:10px; }
+#depthctl .btn{ flex:1; padding:7px 4px; font-size:12px; letter-spacing:.10em; }
+#depthmeta{ margin-top:8px; display:flex; justify-content:space-between; color:var(--ink-dim); }
+
+/* ---------- LOG ---------- */
+#logwrap{ flex:1 1 auto; display:flex; flex-direction:column; min-height:0; background:var(--stone); }
+#log{ flex:1 1 auto; overflow-y:auto; padding:10px 14px 16px; font-size:13.5px; }
+#log .e{ margin:0 0 9px; padding-left:11px; border-left:1px solid #262631; color:#8b857a; line-height:1.6; }
+#log .e.sys{ border-left-color:#3a3446; color:#6f6b7c; font-style:italic; }
+#log .e.flame{ border-left-color:#6b4a1c; }
+#log .e.star{ border-left-color:#4a3563; }
+#log .e.big{ border-left-color:var(--flame); color:var(--ink-bright); font-variant:small-caps; letter-spacing:.08em; }
+#log .e .who{ color:var(--flame-hi); }
+#log .e .whoS{ color:var(--star-hi); }
+#log .e .num{ font-family:var(--mono); font-size:12px; color:var(--ink-bright); }
+#log::-webkit-scrollbar{ width:9px; }
+#log::-webkit-scrollbar-track{ background:#0a0a0e; }
+#log::-webkit-scrollbar-thumb{ background:#262631; border:2px solid #0a0a0e; }
+
+/* ---------- BATTLEFIELD ---------- */
+#field{
+  position:relative; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(78% 62% at 50% 44%, #101017 0%, #08080b 60%, #060608 100%);
+  overflow:hidden; padding:14px;
+}
+/* decorative substrate — takes the heavy depth distortion so the
+   interactive grid stays crisp and clickable */
+#substrate{
+  position:absolute; inset:-12%;
+  background-image:
+    repeating-linear-gradient(0deg,  rgba(255,255,255,.030) 0 1px, transparent 1px 58px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 1px, transparent 1px 58px);
+  mask-image:radial-gradient(58% 52% at 50% 50%, #000 0%, transparent 82%);
+  -webkit-mask-image:radial-gradient(58% 52% at 50% 50%, #000 0%, transparent 82%);
+  filter:url(#dpWarp);
+  transform:translateY(var(--dp-drift));
+  transition:transform 1.2s ease-out;
+  pointer-events:none;
+}
+#vignette{
+  position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(72% 66% at 50% 50%, transparent 34%, rgba(0,0,0,var(--dp-vig)) 100%);
+  transition:background .8s linear;
+}
+#grain{
+  position:absolute; inset:0; pointer-events:none; opacity:var(--dp-grain);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.5'/></svg>");
+  mix-blend-mode:overlay; transition:opacity .8s linear;
+}
+#boardwrap{
+  position:relative; z-index:2;
+  filter:saturate(var(--dp-sat)) contrast(var(--dp-con)) brightness(var(--dp-bri)) hue-rotate(var(--dp-hue));
+  transition:filter .8s linear;
+}
+#board{
+  display:grid; gap:2px; padding:2px;
+  background:var(--grid-line);
+  border:1px solid var(--rule-hot);
+}
+.tile{
+  position:relative;
+  width:66px; height:66px;
+  background:var(--tile);
+  cursor:default;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .12s linear, box-shadow .12s linear;
+}
+.tile.alt{ background:var(--tile-alt); }
+.tile.mv{ background:#26361a; box-shadow:inset 0 0 0 2px rgba(166,203,118,.62); cursor:pointer; }
+.tile.mv:hover{ background:#35491f; box-shadow:inset 0 0 0 2px rgba(196,229,150,.92); }
+.tile.blink{ background:#292545; box-shadow:inset 0 0 0 2px rgba(168,156,232,.66); cursor:pointer; }
+.tile.blink:hover{ background:#37325c; box-shadow:inset 0 0 0 2px rgba(198,188,255,.95); }
+.tile.tgt{ background:#361717; box-shadow:inset 0 0 0 2px rgba(228,124,124,.72); cursor:crosshair; }
+.tile.tgt:hover{ background:#4a1d1d; box-shadow:inset 0 0 0 2px rgba(255,168,168,.98); }
+.tile.sel{ box-shadow:inset 0 0 0 2px #f0b45c; }
+.tile.rupture::before{
+  content:""; position:absolute; inset:9px;
+  border:1px solid rgba(186,150,232,.72);
+  transform:rotate(45deg);
+  background:linear-gradient(180deg, rgba(160,120,210,.22), transparent);
+}
+.tile.hasunit{ cursor:pointer; }
+.tile .hitpct{
+  position:absolute; top:2px; right:3px; z-index:5;
+  font-family:var(--mono); font-size:10px; letter-spacing:.02em;
+  color:#ffd2d2; background:rgba(12,6,6,.92); padding:0 3px; border:1px solid #8d3b3b;
+}
+
+/* unit token */
+.tok{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+.tok svg{ width:44px; height:44px; display:block; }
+.tok.dec svg{ opacity:.45; }
+.tok.dec::after{
+  content:""; position:absolute; inset:6px; border:1px dashed rgba(169,130,207,.5);
+}
+.tok.done{ filter:grayscale(.65) brightness(.62); }
+.tok .hpbar{
+  position:absolute; left:6px; right:6px; bottom:4px; height:3px; background:#000; border:1px solid #23232c;
+}
+.tok .hpbar i{ display:block; height:100%; background:var(--flame); }
+.tok.star .hpbar i{ background:var(--star); }
+.tok .cor{
+  position:absolute; left:6px; right:6px; bottom:9px; height:2px; background:#000;
+}
+.tok .cor i{ display:block; height:100%; background:#8b3ea8; }
+.tok.act{ animation:pulseSel 2.6s ease-in-out infinite; }
+@keyframes pulseSel{ 0%,100%{ opacity:1 } 50%{ opacity:.72 } }
+
+#fieldnote{
+  position:absolute; left:0; right:0; bottom:8px; z-index:3; text-align:center;
+  color:#6b6760; pointer-events:none;
+}
+
+/* ---------- RIGHT COLUMN ---------- */
+.col.right{ background:var(--stone); overflow-y:auto; }
+.col.right::-webkit-scrollbar{ width:9px; }
+.col.right::-webkit-scrollbar-track{ background:#0a0a0e; }
+.col.right::-webkit-scrollbar-thumb{ background:#262631; border:2px solid #0a0a0e; }
+
+.sec{ border-bottom:1px solid var(--rule); }
+.sec > .hd{ padding:8px 14px; color:var(--ink-dim); background:var(--stone-2); border-bottom:1px solid var(--rule); }
+.sec > .bd{ padding:12px 14px; }
+
+.uname{ font-size:17px; color:var(--ink-bright); font-variant:small-caps; letter-spacing:.10em; }
+.uepi{ font-size:12px; color:var(--ink-dim); font-style:italic; margin-top:1px; line-height:1.5; }
+.stats{ margin-top:11px; display:grid; grid-template-columns:1fr 1fr; gap:5px 12px; }
+.stat{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:1px dotted #26262f; padding-bottom:2px; }
+.stat b{ font-weight:400; color:#6d6a63; font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; }
+.stat span{ font-family:var(--mono); font-size:12px; color:var(--ink-bright); }
+
+.meter{ margin-top:9px; }
+.meter .lb{ display:flex; justify-content:space-between; color:var(--ink-dim); margin-bottom:3px; }
+.meter .tr{ height:6px; background:#08080b; border:1px solid #26262f; }
+.meter .tr i{ display:block; height:100%; }
+.meter.hp .tr i{ background:linear-gradient(90deg,var(--flame-deep),var(--flame)); }
+.meter.truth .tr i{ background:linear-gradient(90deg,#2c4a4f,#4f96a3); }
+.meter.cor .tr i{ background:linear-gradient(90deg,var(--star-deep),#a34fc0); }
+
+.abil{ width:100%; text-align:left; margin-top:7px; padding:9px 11px; display:block; }
+.abil .t{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.abil .nm{ font-variant:small-caps; letter-spacing:.13em; font-size:14px; }
+.abil .cost{ font-family:var(--mono); font-size:10px; color:var(--ink-dim); }
+.abil .ds{ font-size:11.5px; color:#6f6b63; margin-top:3px; line-height:1.5; font-style:italic; }
+.abil.noetic{ border-color:#3c3352; }
+.abil.noetic .nm{ color:var(--star-hi); }
+.abil.noetic:hover:not(:disabled){ background:linear-gradient(180deg,#1a1426,#100b18); border-color:var(--star); }
+.abil.armed{ border-color:var(--flame); background:#1c1409; }
+.abil.armed.noetic{ border-color:var(--star); background:#191029; }
+
+.roster .r{
+  display:grid; grid-template-columns:26px 1fr auto; gap:9px; align-items:center;
+  padding:6px 14px; border-bottom:1px solid #17171d; cursor:pointer;
+}
+.roster .r:hover{ background:#131319; }
+.roster .r.dead{ opacity:.34; text-decoration:line-through; cursor:default; }
+.roster .r svg{ width:22px; height:22px; }
+.roster .r .n{ font-size:13px; color:var(--ink); font-variant:small-caps; letter-spacing:.06em; }
+.roster .r .h{ font-family:var(--mono); font-size:11px; color:var(--ink-dim); }
+.roster .r.sel{ background:#191307; box-shadow:inset 2px 0 0 var(--flame); }
+
+.hint{ padding:10px 14px; font-size:12px; color:#6b6760; font-style:italic; line-height:1.65; border-bottom:1px solid var(--rule); background:#0b0b0f; }
+
+/* =========================================================
+   END SCREEN
+   ========================================================= */
+#end{
+  position:fixed; inset:0; z-index:70; display:none;
+  align-items:center; justify-content:center; text-align:center;
+  background:radial-gradient(110% 80% at 50% 40%, rgba(10,9,14,.94), rgba(4,4,6,.985));
+  backdrop-filter:blur(2px);
+}
+#end.on{ display:flex; }
+#end .box{ max-width:660px; padding:0 28px; }
+#end .verdict{ font-size:clamp(38px,7vw,74px); letter-spacing:.26em; text-indent:.26em; color:var(--ink-bright); margin:0; }
+#end .verdict.loss{ color:#9d86b8; }
+#end .kicker{ margin-top:8px; }
+#end .body{ margin-top:26px; font-size:16px; line-height:1.95; color:#8d8779; font-style:italic; }
+#end .body b{ color:var(--flame-hi); font-weight:400; font-style:normal; }
+#end .body.loss b{ color:var(--star-hi); }
+#end .stats2{ margin-top:24px; display:flex; gap:26px; justify-content:center; flex-wrap:wrap; color:var(--ink-dim); }
+#end .stats2 span{ color:var(--ink-bright); font-family:var(--mono); font-size:13px; }
+#end .cta{ margin-top:34px; display:flex; gap:12px; justify-content:center; }
+
+@media (max-width:1180px){
+  #stage{ grid-template-columns:260px 1fr 260px; }
+  .tile{ width:56px; height:56px; }
+  .tok svg{ width:38px; height:38px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SVG filter bank: subtle reality-warp for deep strata -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="dpWarp" x="-12%" y="-12%" width="124%" height="124%">
+    <feTurbulence id="dpTurb" type="fractalNoise" baseFrequency="0.011" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap id="dpDisp" in="SourceGraphic" in2="n" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<!-- ============ TITLE ============ -->
+<div id="title">
+  <div class="lattice"></div>
+  <div class="arch"></div>
+  <div class="arch inner"></div>
+  <div class="content">
+    <h1>AETERNII</h1>
+    <div class="sub tk">Ignivarum &mdash; Vertical Slice &mdash; Engagement I</div>
+    <p class="tagline">&ldquo;<em>You do not move through the stars. You decide which stars remain.</em>&rdquo;</p>
+    <p class="brief">
+      The Aeonic Wound has not closed. Beneath the Cinder-Nave of <span style="color:#9b9284">Ossuar Kel</span>,
+      the strata are thinning &mdash; and a Ghurazi war-band chants a version of this place
+      in which the Flame never arrived.<br><br>
+      You command as <span style="color:#c8842a">Observer</span>. You do not merely order the advance.
+      You choose which reading of this engagement is permitted to become true.
+    </p>
+    <div class="cta">
+      <button class="btn primary" id="beginBtn">Begin Engagement</button>
+      <button class="btn" id="briefBtn">Doctrine &amp; Controls</button>
+    </div>
+  </div>
+  <div class="foot tk">Prototype build &mdash; no assets final</div>
+</div>
+
+<!-- ============ BATTLE ============ -->
+<div id="battle">
+  <div id="topbar">
+    <div class="brand ornament">
+      <div class="n">AETERNII</div>
+      <div class="r tk" id="roundLbl">Round I</div>
+    </div>
+    <div class="phase">
+      <div><span class="tk" style="color:#5f5c56">Phase</span> &nbsp;<span class="v smallcaps" id="phaseLbl">Flame Ascendant</span></div>
+      <div><span class="tk" style="color:#5f5c56">Stratum</span> &nbsp;<span class="v smallcaps" id="depthLbl">Lux Stratum</span></div>
+      <div><span class="tk" style="color:#5f5c56">Accuracy Drift</span> &nbsp;<span class="v" style="font-family:var(--mono);font-size:13px" id="driftLbl">&plusmn;0</span></div>
+    </div>
+    <div class="acts">
+      <button class="btn" id="endTurnBtn">End Flame Phase</button>
+      <button class="btn" id="abandonBtn">Abandon</button>
+    </div>
+  </div>
+
+  <div id="stage">
+    <!-- LEFT -->
+    <div class="col left">
+      <div id="depthrail">
+        <div class="tk" style="color:#5f5c56;margin-bottom:8px">The Depth System</div>
+        <div id="depthlist"></div>
+        <div id="depthflavor"></div>
+        <div id="depthctl">
+          <button class="btn danger" id="descendBtn">Descend</button>
+          <button class="btn" id="ascendBtn">Anchor Rite</button>
+        </div>
+        <div id="depthmeta" class="tk">
+          <span id="riteLbl">Rites 2</span>
+          <span id="decayLbl">Decay in 2</span>
+        </div>
+      </div>
+      <div id="logwrap">
+        <div class="panel-hd"><span class="tk">Vox Recordum</span><span class="tk" id="logCount">0</span></div>
+        <div id="log"></div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div id="field">
+      <div id="substrate"></div>
+      <div id="boardwrap"><div id="board"></div></div>
+      <div id="vignette"></div>
+      <div id="grain"></div>
+      <div id="fieldnote" class="tk"></div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col right">
+      <div class="hint" id="hintBox">Select a servant of the Flame.</div>
+      <div class="sec" id="detailSec">
+        <div class="hd tk">Selected</div>
+        <div class="bd" id="detail"></div>
+      </div>
+      <div class="sec">
+        <div class="hd tk">Ordinance</div>
+        <div class="bd" id="abilities" style="padding-top:5px"></div>
+      </div>
+      <div class="sec roster">
+        <div class="hd tk">Flame Retinue</div>
+        <div id="rosterFlame"></div>
+      </div>
+      <div class="sec roster">
+        <div class="hd tk">Star &mdash; Ghurazi Horde</div>
+        <div id="rosterStar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ END ============ -->
+<div id="end">
+  <div class="box">
+    <h2 class="verdict" id="endVerdict">HELD</h2>
+    <div class="kicker tk" id="endKicker"></div>
+    <div class="body" id="endBody"></div>
+    <div class="stats2 tk" id="endStats"></div>
+    <div class="cta">
+      <button class="btn primary" id="againBtn">Re-enter the Nave</button>
+      <button class="btn" id="titleBtn">Return to Silence</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================
+   AETERNII — vertical slice
+   Vanilla JS. No build step, no network, no storage.
+   ========================================================== */
+
+const W = 8, H = 8;
+const key = (x,y) => x + "," + y;
+const cheb = (a,b) => Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const rnd = n => Math.floor(Math.random()*n);
+const roll = (a,b) => a + rnd(b-a+1);
+const ROMAN = ["","I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX"];
+
+/* ---------- Depth strata (canon) ---------- */
+const STRATA = [
+  { n:1, name:"Lux Stratum",     eff:"NO DRIFT",   flame:0,  star:0,
+    note:"The surface holds. Geometry obeys. What is struck stays struck.",
+    sat:1.00, con:1.00, bri:1.00, hue:"0deg",   vig:0.55, grain:0.020, warp:0,   accent:"#c8842a", noetic:0 },
+  { n:2, name:"Velum Unda",      eff:"-10 / -5",   flame:-10, star:-5,
+    note:"The veil undulates. Distance reports itself falsely, by a small and courteous margin.",
+    sat:0.90, con:1.05, bri:0.97, hue:"-6deg",  vig:0.66, grain:0.030, warp:1.6, accent:"#a97ab0", noetic:1 },
+  { n:3, name:"Abyssii Nihil",   eff:"-20 / -5",   flame:-20, star:-5,
+    note:"The floor of the world thins. Ruptures open where nothing was, and nothing is heavier than it sounds.",
+    sat:0.74, con:1.16, bri:0.90, hue:"-16deg", vig:0.76, grain:0.045, warp:3.2, accent:"#8f5fc0", noetic:2 },
+  { n:4, name:"Ruptura Originii", eff:"-30 / +0",  flame:-30, star:0,
+    note:"Origin tears. Names loosen from the things they named. Hold your own, Observer &mdash; it is also on the table.",
+    sat:0.58, con:1.30, bri:0.84, hue:"-30deg", vig:0.88, grain:0.062, warp:5.4, accent:"#b07de0", noetic:3 }
+];
+
+/* ---------- Sigils (clean silhouettes, flat fill, zero glow) ---------- */
+function sigil(kind){
+  const F = "#c8842a", FD="#7a5018", S = "#7d55a8", SD="#4a3067", K="#0a0a0d";
+  switch(kind){
+    case "ordo": // Ordo Primae Flammae — knight-monk, black-flame sigil on breast
+      return `<svg viewBox="0 0 40 40">
+        <path d="M20 3 L27 8 L29 20 L26 36 L14 36 L11 20 L13 8 Z" fill="${FD}" stroke="${F}" stroke-width="1.1"/>
+        <path d="M13 8 L20 5 L27 8 L24 12 L16 12 Z" fill="${F}"/>
+        <path d="M20 15 C23 19 23.5 22 20 27 C16.5 22 17 19 20 15 Z" fill="${K}"/>
+        <path d="M20 30 L20 36" stroke="${K}" stroke-width="1.4"/>
+      </svg>`;
+    case "igni": // Gothorum War-Breed "Ignivarum" — heavier, censer-armed
+      return `<svg viewBox="0 0 40 40">
+        <path d="M20 5 L30 10 L28 22 L25 36 L15 36 L12 22 L10 10 Z" fill="${FD}" stroke="${F}" stroke-width="1.1"/>
+        <rect x="16" y="7" width="8" height="6" fill="${F}"/>
+        <path d="M20 16 L24 21 L20 26 L16 21 Z" fill="${K}"/>
+        <path d="M30 12 L34 20 L31 26" stroke="${F}" stroke-width="1.1" fill="none"/>
+        <rect x="29" y="26" width="4" height="4" fill="${K}" stroke="${F}" stroke-width=".9"/>
+      </svg>`;
+    case "chant": // Ghurazi Chant-Bearer
+      return `<svg viewBox="0 0 40 40">
+        <path d="M20 4 L28 11 L25 24 L27 36 L13 36 L15 24 L12 11 Z" fill="${SD}" stroke="${S}" stroke-width="1.1"/>
+        <path d="M14 10 L20 6 L26 10 L23 15 L17 15 Z" fill="${S}"/>
+        <path d="M17 11 L19 13 M23 11 L21 13" stroke="${K}" stroke-width="1.2"/>
+        <path d="M20 19 L20 31 M15 25 L25 25" stroke="${K}" stroke-width="1.3"/>
+      </svg>`;
+    case "throat": // Ghurazi Void-Throat — ranged chanter
+      return `<svg viewBox="0 0 40 40">
+        <path d="M20 4 L29 12 L26 26 L24 36 L16 36 L14 26 L11 12 Z" fill="${SD}" stroke="${S}" stroke-width="1.1"/>
+        <circle cx="20" cy="13" r="5.4" fill="${K}" stroke="${S}" stroke-width="1"/>
+        <path d="M20 8.2 L20 18 M15 13 L25 13 M16.4 9.4 L23.6 16.6 M23.6 9.4 L16.4 16.6" stroke="${S}" stroke-width=".8"/>
+        <path d="M13 30 L27 30" stroke="${S}" stroke-width="1"/>
+      </svg>`;
+    case "rider": // Ghurazi Outrider — fast, lean
+      return `<svg viewBox="0 0 40 40">
+        <path d="M20 5 L26 10 L24 22 L26 36 L14 36 L16 22 L14 10 Z" fill="${SD}" stroke="${S}" stroke-width="1.1"/>
+        <path d="M16 9 L20 6 L24 9 L22 13 L18 13 Z" fill="${S}"/>
+        <path d="M8 14 L20 20 L32 14" stroke="${S}" stroke-width="1.1" fill="none"/>
+        <path d="M20 24 L20 33" stroke="${K}" stroke-width="1.3"/>
+      </svg>`;
+  }
+  return "";
+}
+
+/* ---------- Ability catalogue ---------- */
+/* kind: melee|ranged|blink|burn|decoy   noetic: is a Noetic Art */
+const ABIL = {
+  relic_strike: { id:"relic_strike", name:"Relic Strike", noetic:false, kind:"melee", range:1,
+    dmg:[16,23], acc:88, cost:"ACT",
+    desc:"A relic edge remembers every throat it has opened. Adjacent target." },
+  censer_volley:{ id:"censer_volley", name:"Censer Volley", noetic:false, kind:"ranged", range:3,
+    dmg:[10,15], acc:80, cost:"ACT",
+    desc:"Consecrated shot, three tiles. Loses coherence in the deeper strata." },
+
+  existence_shift:{ id:"existence_shift", name:"Existence Shift", noetic:true, kind:"blink", range:3,
+    dmg:null, acc:null, cost:"ACT",
+    desc:"Assert a position you did not occupy. Ignores bodies and rupture. Ends this servant's action." },
+  memory_burn:{ id:"memory_burn", name:"Memory Burn", noetic:true, kind:"burn", range:3,
+    dmg:null, acc:null, cost:"ACT",
+    desc:"Ignites what the target has been made to admit. Cannot miss. Scales with the target's Truth Exposure and with Depth &mdash; and raises your own." },
+  false_reality:{ id:"false_reality", name:"False Reality Projection", noetic:true, kind:"decoy", range:2,
+    dmg:null, acc:null, cost:"ACT", charges:2,
+    desc:"Project a self you did not send. If the Star strikes it, the lie is believed and takes the blow. Unbelieved, it unmakes itself in two rounds." },
+
+  ghur_cleave:{ id:"ghur_cleave", name:"Chant-Cleave", noetic:false, kind:"melee", range:1,
+    dmg:[11,17], acc:82, cost:"ACT", desc:"" },
+  ghur_lash:{ id:"ghur_lash", name:"Naming Lash", noetic:false, kind:"ranged", range:3,
+    dmg:[8,12], acc:78, cost:"ACT", desc:"", truthOnHit:12 },
+  ghur_run:{ id:"ghur_run", name:"Rakh Gouge", noetic:false, kind:"melee", range:1,
+    dmg:[10,15], acc:85, cost:"ACT", desc:"" }
+};
+
+/* ---------- Roster templates ---------- */
+function makeUnits(){
+  return [
+    { id:"valdrec", side:"flame", sig:"ordo",
+      name:"Ser Valdrec Ohm", epi:"Ordo Primae Flammae &mdash; Third Vigil, sworn to the Cinder-Nave",
+      x:2, y:7, hp:74, maxHp:74, mv:3, abil:["relic_strike","existence_shift"] },
+    { id:"casta", side:"flame", sig:"igni",
+      name:"Inquisitrix Casta Morn", epi:"Gothorum War-Breed &lsquo;Ignivarum&rsquo; &mdash; Fire-Bearer, Second Confession",
+      x:5, y:7, hp:56, maxHp:56, mv:3, abil:["censer_volley","memory_burn","false_reality"] },
+
+    { id:"kzur", side:"star", sig:"chant",
+      name:"Kzur the Unlistening", epi:"Ghurazi Chant-Bearer",
+      x:2, y:0, hp:44, maxHp:44, mv:3, abil:["ghur_cleave"] },
+    { id:"vekh", side:"star", sig:"throat",
+      name:"Vekh Nine-Mouths", epi:"Ghurazi Void-Throat",
+      x:5, y:0, hp:35, maxHp:35, mv:2, abil:["ghur_lash"] },
+    { id:"sahl", side:"star", sig:"rider",
+      name:"Sahl-Rakh", epi:"Ghurazi Outrider",
+      x:7, y:2, hp:39, maxHp:39, mv:4, abil:["ghur_run"] }
+  ].map(u => Object.assign({
+    alive:true, moved:false, acted:false, truth:0, cor:0,
+    isDecoy:false, decoyAge:0, ownerId:null, charges:{}
+  }, u));
+}
+
+/* ---------- Game state ---------- */
+let G = null;
+
+function newGame(){
+  G = {
+    round:1, phase:"flame", depth:1,
+    rites:2, decayIn:2,
+    units:makeUnits(),
+    ruptures:new Set(),
+    sel:null, mode:"idle", armed:null,
+    log:[], over:false, busy:false,
+    stats:{ shots:0, hits:0, deepest:1, arts:0 }
+  };
+  G.units.forEach(u => { if(u.abil.includes("false_reality")) u.charges.false_reality = ABIL.false_reality.charges; });
+  logE("sys", "Engagement opens beneath the Cinder-Nave of Ossuar Kel. Stratum <b>Lux Stratum</b>. The Flame moves first.");
+  logE("sys", "Observer: two readings of this floor are currently possible. Only one will be permitted to remain.");
+}
+
+/* ---------- Unit helpers ---------- */
+const living = () => G.units.filter(u => u.alive);
+const unitAt = (x,y) => G.units.find(u => u.alive && u.x===x && u.y===y);
+const flameFighters = () => G.units.filter(u => u.alive && u.side==="flame" && !u.isDecoy);
+const starFighters  = () => G.units.filter(u => u.alive && u.side==="star");
+const stratum = () => STRATA[(G ? G.depth : 1) - 1];
+
+function accMod(side){ return side==="flame" ? stratum().flame : stratum().star; }
+
+function hitChance(att, abilId, tgt){
+  const a = ABIL[abilId];
+  if(a.acc === null) return 100;
+  let c = a.acc + accMod(att.side);
+  if(a.kind==="ranged"){
+    const d = cheb(att,tgt);
+    if(d >= 3) c -= 6;                       // long shot
+  }
+  if(G.ruptures.has(key(tgt.x,tgt.y))) c -= 8;  // target stands on a tear
+  return clamp(Math.round(c), 5, 96);
+}
+
+function memoryBurnDamage(att, tgt){
+  const base = 9;
+  const fromTruth = Math.floor(tgt.truth * 0.22);
+  const fromDepth = stratum().noetic * 4;
+  return base + fromTruth + fromDepth;
+}
+
+/* ---------- Logging ---------- */
+function nameSpan(u){
+  return `<span class="${u.side==="flame"?"who":"whoS"}">${u.isDecoy ? "A likeness of " + u.name : u.name}</span>`;
+}
+function logE(cls, html){
+  G.log.push({ cls, html });
+  if(G.log.length > 200) G.log.shift();
+  renderLog();
+}
+
+/* ==========================================================
+   MOVEMENT / TARGETING
+   ========================================================== */
+function moveTiles(u){
+  const dist = {}; dist[key(u.x,u.y)] = 0;
+  const q = [[u.x,u.y]]; const out = [];
+  while(q.length){
+    const [x,y] = q.shift(); const d = dist[key(x,y)];
+    if(d >= u.mv) continue;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx = x+dx, ny = y+dy;
+      if(nx<0||ny<0||nx>=W||ny>=H) continue;
+      if(dist[key(nx,ny)] !== undefined) continue;
+      if(unitAt(nx,ny)) continue;
+      dist[key(nx,ny)] = d+1;
+      out.push({x:nx, y:ny});
+      q.push([nx,ny]);
+    }
+  }
+  return out;
+}
+
+function blinkTiles(u, r){
+  const out = [];
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(x===u.x && y===u.y) continue;
+    if(unitAt(x,y)) continue;
+    if(Math.max(Math.abs(x-u.x), Math.abs(y-u.y)) <= r) out.push({x,y});
+  }
+  return out;
+}
+
+function decoyTiles(u, r){
+  const out = [];
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    if(unitAt(x,y)) continue;
+    if(G.ruptures.has(key(x,y))) continue;
+    if(Math.max(Math.abs(x-u.x), Math.abs(y-u.y)) <= r) out.push({x,y});
+  }
+  return out;
+}
+
+function targetsFor(u, abilId){
+  const a = ABIL[abilId];
+  return G.units.filter(t => t.alive && t.side !== u.side && cheb(u,t) <= a.range);
+}
+
+/* ==========================================================
+   RESOLUTION
+   ========================================================== */
+function resolveAttack(att, abilId, tgt){
+  const a = ABIL[abilId];
+  G.stats.shots++;
+  const ch = hitChance(att, abilId, tgt);
+  const r = rnd(100) + 1;
+  const hit = r <= ch;
+
+  if(!hit){
+    logE(att.side, `${nameSpan(att)} looses <b>${a.name}</b> at ${nameSpan(tgt)} &mdash; <span class="num">${ch}%</span> &mdash; and the stratum edits the line. <i>Miss.</i>`);
+    if(G.depth >= 2) att.truth = clamp(att.truth + 4, 0, 100);
+    return;
+  }
+  G.stats.hits++;
+
+  /* False Reality Projection: the lie is believed, and so it bleeds */
+  if(tgt.isDecoy){
+    logE("star", `${nameSpan(att)} strikes the projection of <span class="who">${tgt.name}</span>. <i>The lie was believed &mdash; and so it bled.</i> The likeness unmakes itself; the true ${tgt.name} is untouched.`);
+    tgt.alive = false;
+    return;
+  }
+
+  const dmg = roll(a.dmg[0], a.dmg[1]);
+  tgt.hp -= dmg;
+  tgt.truth = clamp(tgt.truth + 10 + (a.truthOnHit||0), 0, 100);
+  logE(att.side, `${nameSpan(att)} lands <b>${a.name}</b> on ${nameSpan(tgt)} &mdash; <span class="num">${ch}%</span> &mdash; <span class="num">${dmg}</span> harm.`
+    + (a.truthOnHit ? ` <i>The chant names her; Truth Exposure climbs.</i>` : ``));
+  checkDeath(tgt);
+}
+
+function resolveMemoryBurn(att, tgt){
+  G.stats.shots++; G.stats.hits++; G.stats.arts++;
+  if(tgt.isDecoy){
+    logE("flame", `${nameSpan(att)} burns the memory of a projection. There was none. The likeness disperses.`);
+    tgt.alive = false; att.truth = clamp(att.truth+15,0,100); return;
+  }
+  const dmg = memoryBurnDamage(att, tgt);
+  tgt.hp -= dmg;
+  logE("flame", `${nameSpan(att)} works <b>Memory Burn</b> upon ${nameSpan(tgt)}. Cognition does not miss. <span class="num">${dmg}</span> harm `
+    + `<span style="color:#6d6a63">(9 base + ${Math.floor(tgt.truth*0.22)} exposure + ${stratum().noetic*4} depth)</span>.`);
+  att.truth = clamp(att.truth + 15, 0, 100);
+  tgt.truth = clamp(tgt.truth + 6, 0, 100);
+  if(G.depth >= 3) att.cor = clamp(att.cor + 8, 0, 100);
+  checkDeath(tgt);
+  checkCorruption(att);
+}
+
+function checkDeath(u){
+  if(u.hp > 0) return;
+  u.hp = 0; u.alive = false;
+  if(u.side === "flame"){
+    logE("flame", `<b>${u.name} falls.</b> The Ordo does not record the manner of it &mdash; only that the Flame was carried this far.`);
+    // dissolve any projections she was maintaining
+    G.units.filter(d => d.alive && d.isDecoy && d.ownerId === u.id).forEach(d => { d.alive=false; });
+  } else {
+    logE("star", `<b>${u.name} is unmade.</b> The chant goes ragged where the voice was.`);
+  }
+  checkEnd();
+}
+
+function checkCorruption(u){
+  if(u.isDecoy || !u.alive || u.side !== "flame") return;
+  if(u.cor < 100) return;
+  u.alive = false; u.hp = 0;
+  logE("star", `<b>${u.name} loses the thread of her own name.</b> Ruptura Originii keeps what it loosens. She is no longer ours, and no longer anyone's.`);
+  G.units.filter(d => d.alive && d.isDecoy && d.ownerId === u.id).forEach(d => { d.alive=false; });
+  checkEnd();
+}
+
+function checkEnd(){
+  if(G.over) return false;
+  if(starFighters().length === 0){ endGame(true); return true; }
+  if(flameFighters().length === 0){ endGame(false); return true; }
+  return false;
+}
+
+/* ==========================================================
+   DEPTH
+   ========================================================== */
+function setDepth(n, reason){
+  const prev = G.depth;
+  G.depth = clamp(n, 1, 4);
+  if(G.depth > G.stats.deepest) G.stats.deepest = G.depth;
+  const s = stratum();
+  if(G.depth !== prev){
+    logE("sys", `<b>Stratum shift &mdash; ${s.name}.</b> ${reason||""} Flame accuracy drift <span class="num">${s.flame}</span>, Star drift <span class="num">${s.star>=0?"+":""}${s.star}</span>.`);
+  }
+  reshapeRuptures();
+  applyDepthVisuals();
+}
+
+function reshapeRuptures(){
+  const want = G.depth === 3 ? 4 : G.depth === 4 ? 7 : 0;
+  if(want === 0){ if(G.ruptures.size){ G.ruptures.clear(); logE("sys","The tears close. The floor agrees to be a floor."); } return; }
+  const had = G.ruptures.size;
+  // keep existing, add up to want
+  let guard = 0;
+  while(G.ruptures.size < want && guard++ < 400){
+    const x = rnd(W), y = rnd(H);
+    if(unitAt(x,y)) continue;
+    if(y >= H-1 || y <= 0) continue;   // keep deployment rows clear
+    G.ruptures.add(key(x,y));
+  }
+  if(G.ruptures.size > had) logE("sys", `Ruptures open across the nave &mdash; <span class="num">${G.ruptures.size}</span> tears where the floor forgets to exist.`);
+}
+
+function applyDepthVisuals(){
+  const s = stratum();
+  const r = document.documentElement.style;
+  r.setProperty("--dp-sat", s.sat);
+  r.setProperty("--dp-con", s.con);
+  r.setProperty("--dp-bri", s.bri);
+  r.setProperty("--dp-hue", s.hue);
+  r.setProperty("--dp-vig", s.vig);
+  r.setProperty("--dp-grain", s.grain);
+  r.setProperty("--dp-accent", s.accent);
+  r.setProperty("--dp-drift", (s.n-1) * 4 + "px");
+  const disp = document.getElementById("dpDisp");
+  if(disp) disp.setAttribute("scale", s.warp);
+  const turb = document.getElementById("dpTurb");
+  if(turb) turb.setAttribute("baseFrequency", (0.010 + (s.n-1)*0.004).toFixed(3));
+}
+
+/* ==========================================================
+   ROUND FLOW
+   ========================================================== */
+function beginFlamePhase(){
+  G.phase = "flame";
+  G.units.forEach(u => { u.moved = false; u.acted = false; });
+  G.sel = null; G.mode = "idle"; G.armed = null;
+  logE("sys", `<b>Round ${ROMAN[G.round]||G.round} &mdash; the Flame moves.</b>`);
+  renderAll();
+}
+
+function endFlamePhase(){
+  if(G.over || G.busy) return;
+  G.sel = null; G.mode = "idle"; G.armed = null;
+  G.phase = "star";
+  renderAll();
+  logE("sys", "The Ghurazi answer.");
+  G.busy = true;
+  setTimeout(starPhase, 520);
+}
+
+function starPhase(){
+  const actors = starFighters().slice();
+  let i = 0;
+  const step = () => {
+    if(G.over){ G.busy=false; return; }
+    if(i >= actors.length){ G.busy=false; endOfRound(); return; }
+    const e = actors[i++];
+    if(!e.alive){ step(); return; }
+    enemyAct(e);
+    renderAll();
+    setTimeout(step, 460);
+  };
+  step();
+}
+
+function enemyAct(e){
+  const abilId = e.abil[0];
+  const a = ABIL[abilId];
+  // valid marks: living Flame units AND projections (the Star cannot tell them apart)
+  const marks = G.units.filter(u => u.alive && u.side === "flame");
+  if(!marks.length) return;
+
+  // nearest mark, ties broken by lower HP
+  marks.sort((p,q) => (cheb(e,p)-cheb(e,q)) || (p.hp-q.hp));
+  const mark = marks[0];
+
+  if(cheb(e, mark) > a.range){
+    const opts = moveTiles(e);
+    opts.push({x:e.x, y:e.y});
+    let best = null, bestScore = Infinity;
+    for(const t of opts){
+      const d = Math.max(Math.abs(t.x-mark.x), Math.abs(t.y-mark.y));
+      const hazard = G.ruptures.has(key(t.x,t.y)) ? 0.4 : 0;
+      const sc = d + hazard;
+      if(sc < bestScore){ bestScore = sc; best = t; }
+    }
+    if(best && (best.x !== e.x || best.y !== e.y)){
+      e.x = best.x; e.y = best.y;
+      logE("star", `${nameSpan(e)} closes on ${nameSpan(mark)}.`);
+      if(applyRupture(e)) return;
+    }
+  }
+
+  // re-evaluate marks after the move
+  const inRange = G.units.filter(u => u.alive && u.side === "flame" && cheb(e,u) <= a.range);
+  if(inRange.length){
+    inRange.sort((p,q) => (p.isDecoy?-1:0) - (q.isDecoy?-1:0) || p.hp - q.hp);
+    resolveAttack(e, abilId, inRange[0]);
+  } else {
+    logE("star", `${nameSpan(e)} chants at a distance. The syllables do not reach.`);
+  }
+}
+
+function applyRupture(u){
+  if(!G.ruptures.has(key(u.x,u.y))) return false;
+  const d = G.depth === 4 ? roll(7,12) : roll(5,9);
+  u.hp -= d;
+  u.truth = clamp(u.truth + 8, 0, 100);
+  logE("sys", `${nameSpan(u)} sets weight on a rupture. <span class="num">${d}</span> harm; the tear takes a reading.`);
+  checkDeath(u);
+  return !u.alive;
+}
+
+function endOfRound(){
+  if(G.over) return;
+
+  // projections age out
+  G.units.filter(u => u.alive && u.isDecoy).forEach(d => {
+    d.decoyAge++;
+    if(d.decoyAge >= 2){
+      d.alive = false;
+      logE("sys", `The projection of <span class="who">${d.name}</span> goes unbelieved and unmakes itself.`);
+    }
+  });
+
+  // depth pressure on the Flame
+  if(G.depth >= 2){
+    flameFighters().forEach(u => { u.truth = clamp(u.truth + (G.depth-1)*4, 0, 100); });
+  }
+  if(G.depth >= 3){
+    const gain = G.depth === 4 ? 22 : 8;
+    const fell = [];
+    flameFighters().forEach(u => {
+      u.cor = clamp(u.cor + gain, 0, 100);
+      if(u.cor >= 100) fell.push(u);
+    });
+    if(G.depth === 4){
+      logE("sys", `<i>Ruptura Originii asks each servant to state their name. Corruption <span class="num">+${gain}</span>.</i>`);
+    } else {
+      logE("sys", `<i>Abyssii Nihil presses. Corruption <span class="num">+${gain}</span>.</i>`);
+    }
+    fell.forEach(checkCorruption);
+    if(G.over) return;
+  }
+
+  // automatic reality decay
+  G.decayIn--;
+  if(G.decayIn <= 0){
+    G.decayIn = 2;
+    if(G.depth < 4) setDepth(G.depth+1, "The Wound widens without being asked.");
+    else logE("sys", "<i>There is nothing beneath Ruptura Originii. The descent has nowhere left to go.</i>");
+  }
+  if(G.over) return;
+
+  G.round++;
+  beginFlamePhase();
+}
+
+/* ==========================================================
+   PLAYER INPUT
+   ========================================================== */
+function selectUnit(u){
+  if(G.phase !== "flame" || G.over || G.busy) return;
+  if(!u || !u.alive) return;
+  if(u.side !== "flame" || u.isDecoy){
+    G.sel = u; G.mode = "inspect"; G.armed = null; renderAll(); return;
+  }
+  G.sel = u; G.armed = null;
+  G.mode = u.moved ? "idle" : "move";
+  renderAll();
+}
+
+function armAbility(id){
+  const u = G.sel;
+  if(!u || u.side !== "flame" || u.isDecoy || u.acted) return;
+  if(G.armed === id){ G.armed = null; G.mode = u.moved ? "idle" : "move"; renderAll(); return; }
+  const a = ABIL[id];
+  if(a.charges !== undefined && (u.charges[id]||0) <= 0) return;
+  G.armed = id;
+  G.mode = (a.kind === "blink") ? "blink" : (a.kind === "decoy") ? "decoy" : "target";
+  renderAll();
+}
+
+function tileClick(x,y){
+  if(G.over || G.busy || G.phase !== "flame") return;
+  const occupant = unitAt(x,y);
+  const u = G.sel;
+
+  // targeting an ability
+  if(u && G.armed){
+    const a = ABIL[G.armed];
+    if(G.mode === "blink"){
+      if(blinkTiles(u, a.range).some(t => t.x===x && t.y===y)){
+        const fx=u.x, fy=u.y;
+        u.x = x; u.y = y; u.acted = true; u.moved = true;
+        u.truth = clamp(u.truth + 8, 0, 100);
+        if(G.depth >= 3) u.cor = clamp(u.cor + 6, 0, 100);
+        G.stats.arts++;
+        logE("flame", `${nameSpan(u)} works <b>Existence Shift</b> &mdash; the tile at <span class="num">${fx+1}&middot;${fy+1}</span> is revised, and she is asserted at <span class="num">${x+1}&middot;${y+1}</span> instead. <i>Nothing crossed the space between.</i>`);
+        applyRupture(u);
+        checkCorruption(u);
+        G.armed = null; G.mode = "idle"; renderAll(); return;
+      }
+    }
+    if(G.mode === "decoy"){
+      if(decoyTiles(u, a.range).some(t => t.x===x && t.y===y)){
+        spawnDecoy(u, x, y);
+        u.acted = true; u.charges[a.id]--;
+        G.stats.arts++;
+        G.armed = null; G.mode = "idle"; renderAll(); return;
+      }
+    }
+    if(G.mode === "target" && occupant && occupant.side !== u.side){
+      if(cheb(u, occupant) <= a.range){
+        if(a.kind === "burn") resolveMemoryBurn(u, occupant);
+        else resolveAttack(u, G.armed, occupant);
+        u.acted = true;
+        G.armed = null; G.mode = "idle";
+        if(!G.over) renderAll(); else renderAll();
+        return;
+      }
+    }
+    // clicked elsewhere: cancel
+    G.armed = null; G.mode = u.moved ? "idle" : "move"; renderAll(); return;
+  }
+
+  // movement
+  if(u && G.mode === "move" && !occupant){
+    if(moveTiles(u).some(t => t.x===x && t.y===y)){
+      const fx=u.x, fy=u.y;
+      u.x = x; u.y = y; u.moved = true;
+      logE("flame", `${nameSpan(u)} advances to <span class="num">${x+1}&middot;${y+1}</span>.`);
+      G.mode = "idle";
+      if(applyRupture(u)){ renderAll(); return; }
+      renderAll(); return;
+    }
+  }
+
+  if(occupant){ selectUnit(occupant); return; }
+  G.sel = null; G.mode = "idle"; G.armed = null; renderAll();
+}
+
+function spawnDecoy(owner, x, y){
+  const d = {
+    id:"decoy_" + owner.id + "_" + Date.now(),
+    side:"flame", sig:owner.sig, name:owner.name, epi:"Projection &mdash; not yet true",
+    x, y, hp:1, maxHp:1, mv:0, abil:[],
+    alive:true, moved:true, acted:true, truth:0, cor:0,
+    isDecoy:true, decoyAge:0, ownerId:owner.id, charges:{}
+  };
+  G.units.push(d);
+  logE("flame", `${nameSpan(owner)} projects <b>False Reality</b> at <span class="num">${x+1}&middot;${y+1}</span> &mdash; a Casta Morn who was never sent. <i>It becomes true only if the Star believes it enough to strike it.</i>`);
+}
+
+function holdUnit(){
+  const u = G.sel;
+  if(!u || u.side!=="flame" || u.isDecoy) return;
+  u.acted = true; u.moved = true;
+  logE("flame", `${nameSpan(u)} holds the line and says nothing.`);
+  G.sel = null; G.mode = "idle"; G.armed = null;
+  renderAll();
+}
+
+function playerDescend(){
+  if(G.over || G.busy || G.phase !== "flame") return;
+  if(G.depth >= 4) return;
+  setDepth(G.depth+1, "<i>The Observer elects the deeper reading.</i>");
+  logE("sys", "You permit the floor to thin. The Noetic Arts sharpen; everything else grows less certain.");
+  renderAll();
+}
+function playerAscend(){
+  if(G.over || G.busy || G.phase !== "flame") return;
+  if(G.rites <= 0 || G.depth <= 1) return;
+  G.rites--;
+  setDepth(G.depth-1, "<i>Anchor Rite &mdash; the Ordo insists on an older version of this room.</i>");
+  logE("flame", `<b>Anchor Rite spent.</b> Ser Valdrec recites a floor that used to be here, and it consents to return. <span class="num">${G.rites}</span> remaining.`);
+  renderAll();
+}
+
+/* ==========================================================
+   RENDER
+   ========================================================== */
+const $ = id => document.getElementById(id);
+
+function renderAll(){
+  renderTop(); renderDepth(); renderBoard(); renderSide(); renderRoster();
+}
+
+function renderTop(){
+  $("roundLbl").textContent = "Round " + (ROMAN[G.round] || G.round);
+  $("phaseLbl").textContent = G.over ? "Concluded" : (G.phase === "flame" ? "Flame Ascendant" : "Star Ascendant");
+  $("depthLbl").textContent = stratum().name;
+  const m = accMod("flame");
+  $("driftLbl").textContent = (m > 0 ? "+" : "") + m;
+  $("driftLbl").style.color = m === 0 ? "#b9b3a6" : "#c98a8a";
+  $("endTurnBtn").disabled = G.over || G.busy || G.phase !== "flame";
+}
+
+function renderDepth(){
+  const list = $("depthlist");
+  list.innerHTML = STRATA.map(s => {
+    const cls = s.n === G.depth ? "cur" : (s.n < G.depth ? "past" : "");
+    return `<div class="depth-layer ${cls}">
+      <div class="idx">${ROMAN[s.n]}</div>
+      <div class="nm">${s.name}</div>
+      <div class="ef">${s.eff}</div>
+    </div>`;
+  }).join("");
+  $("depthflavor").innerHTML = stratum().note;
+  $("riteLbl").textContent = "Anchor Rites " + G.rites;
+  $("decayLbl").textContent = G.depth < 4 ? ("Decay in " + G.decayIn) : "Decay: floor reached";
+  $("descendBtn").disabled = G.over || G.busy || G.phase!=="flame" || G.depth >= 4;
+  $("ascendBtn").disabled  = G.over || G.busy || G.phase!=="flame" || G.rites <= 0 || G.depth <= 1;
+}
+
+function renderLog(){
+  const el = $("log");
+  if(!el) return;
+  el.innerHTML = G.log.map(e => `<div class="e ${e.cls}">${e.html}</div>`).join("");
+  el.scrollTop = el.scrollHeight;
+  $("logCount").textContent = G.log.length;
+}
+
+function renderBoard(){
+  const b = $("board");
+  b.style.gridTemplateColumns = `repeat(${W}, auto)`;
+
+  const u = G.sel;
+  let mv = [], bl = [], dc = [], tg = [];
+  if(u && u.side==="flame" && !u.isDecoy && G.phase==="flame" && !G.over && !G.busy){
+    if(G.mode === "move" && !u.moved) mv = moveTiles(u);
+    if(G.mode === "blink") bl = blinkTiles(u, ABIL[G.armed].range);
+    if(G.mode === "decoy") dc = decoyTiles(u, ABIL[G.armed].range);
+    if(G.mode === "target") tg = targetsFor(u, G.armed);
+  }
+  const inSet = (arr,x,y) => arr.some(t => t.x===x && t.y===y);
+
+  let html = "";
+  for(let y=0;y<H;y++){
+    for(let x=0;x<W;x++){
+      const occ = unitAt(x,y);
+      const cls = ["tile"];
+      if((x+y)%2) cls.push("alt");
+      if(G.ruptures.has(key(x,y))) cls.push("rupture");
+      if(inSet(mv,x,y)) cls.push("mv");
+      if(inSet(bl,x,y)) cls.push("blink");
+      if(inSet(dc,x,y)) cls.push("blink");
+      if(occ && u && occ.id===u.id) cls.push("sel");
+      if(occ) cls.push("hasunit");
+
+      let extra = "";
+      const tgHit = tg.find(t => t.x===x && t.y===y);
+      if(tgHit){
+        cls.push("tgt");
+        const a = ABIL[G.armed];
+        const pct = a.kind === "burn" ? "SURE" : hitChance(u, G.armed, tgHit) + "%";
+        extra = `<div class="hitpct">${pct}</div>`;
+      }
+
+      let tok = "";
+      if(occ){
+        const tcls = ["tok"];
+        if(occ.side==="star") tcls.push("star");
+        if(occ.isDecoy) tcls.push("dec");
+        if(occ.side==="flame" && !occ.isDecoy && occ.acted && G.phase==="flame") tcls.push("done");
+        if(u && occ.id===u.id) tcls.push("act");
+        const hpw = Math.max(0, Math.round(occ.hp/occ.maxHp*100));
+        tok = `<div class="${tcls.join(" ")}">${sigil(occ.sig)}`
+            + (occ.isDecoy ? "" : `<div class="hpbar"><i style="width:${hpw}%"></i></div>`)
+            + (occ.side==="flame" && !occ.isDecoy && occ.cor>0 ? `<div class="cor"><i style="width:${occ.cor}%"></i></div>` : "")
+            + `</div>`;
+      }
+      html += `<div class="${cls.join(" ")}" data-x="${x}" data-y="${y}" title="${x+1}&middot;${y+1}">${tok}${extra}</div>`;
+    }
+  }
+  b.innerHTML = html;
+
+  let note = "";
+  if(G.over) note = "";
+  else if(G.busy || G.phase==="star") note = "The Star moves.";
+  else if(G.armed) note = "Designate a target &mdash; or click away to withdraw the order.";
+  else if(G.mode==="move") note = "Green: reachable. Then choose an ordinance.";
+  else note = "Select a servant of the Flame.";
+  $("fieldnote").textContent = note;
+}
+
+function meter(cls, label, val, max, suffix){
+  const pct = clamp(Math.round(val/max*100),0,100);
+  return `<div class="meter ${cls}">
+    <div class="lb tk"><span>${label}</span><span>${val}${suffix||""} / ${max}${suffix||""}</span></div>
+    <div class="tr"><i style="width:${pct}%"></i></div></div>`;
+}
+
+function renderSide(){
+  const u = G.sel;
+  const det = $("detail"), ab = $("abilities"), hint = $("hintBox");
+
+  if(!u || !u.alive){
+    det.innerHTML = `<div class="uepi">No servant designated. The engagement waits on your reading of it.</div>`;
+    ab.innerHTML = `<div class="uepi" style="padding:6px 0 10px">&mdash;</div>`;
+    hint.textContent = G.phase==="flame" ? "Select a servant of the Flame." : "The Ghurazi are acting.";
+    return;
+  }
+
+  const isMine = u.side === "flame" && !u.isDecoy;
+  det.innerHTML =
+    `<div class="uname">${u.name}${u.isDecoy?" <span style='color:#a982cf'>(Projection)</span>":""}</div>
+     <div class="uepi">${u.epi}</div>
+     <div class="stats">
+       <div class="stat"><b>Alleg</b><span style="color:${u.side==="flame"?"#e8ab4e":"#a982cf"}">${u.side==="flame"?"Flame":"Star"}</span></div>
+       <div class="stat"><b>Move</b><span>${u.mv}</span></div>
+       <div class="stat"><b>Tile</b><span>${u.x+1}&middot;${u.y+1}</span></div>
+       <div class="stat"><b>Drift</b><span>${accMod(u.side)}</span></div>
+     </div>`
+    + (u.isDecoy
+        ? `<div class="uepi" style="margin-top:11px">Believed in <b style="color:#a982cf">${2-u.decoyAge}</b> more round(s), or it disperses. If the Star strikes it, the blow is spent here.</div>`
+        : meter("hp","Vitae",u.hp,u.maxHp)
+          + meter("truth","Truth Exposure",u.truth,100)
+          + (u.side==="flame" ? meter("cor","Identity Corruption",u.cor,100) : "")
+      )
+    + (isMine ? `<div class="uepi" style="margin-top:10px">${u.moved?"Advance spent.":"Advance available."} ${u.acted?"Ordinance spent.":"Ordinance available."}</div>` : "");
+
+  if(!isMine){
+    ab.innerHTML = `<div class="uepi" style="padding:6px 0 10px">${u.isDecoy?"A projection issues no orders.":"Enemy ordinance: " + u.abil.map(a=>ABIL[a].name).join(", ") + "."}</div>`;
+    hint.textContent = u.isDecoy ? "This is the lie you told. Let them believe it." : "Ghurazi war-band. Aggressive, no central command.";
+    return;
+  }
+
+  let h = "";
+  for(const id of u.abil){
+    const a = ABIL[id];
+    const ch = a.charges !== undefined ? (u.charges[id]||0) : null;
+    const dis = u.acted || (ch !== null && ch <= 0) || G.phase!=="flame" || G.busy || G.over;
+    const armed = G.armed === id ? " armed" : "";
+    let readout;
+    if(a.kind === "burn"){
+      readout = "SURE HIT";
+    } else if(a.kind === "blink"){ readout = "RANGE " + a.range;
+    } else if(a.kind === "decoy"){ readout = "CHARGES " + ch;
+    } else { readout = "R" + a.range + " &middot; " + (a.acc + accMod(u.side)) + "%"; }
+    h += `<button class="btn abil${a.noetic?" noetic":""}${armed}" data-abil="${id}" ${dis?"disabled":""}>
+      <div class="t"><span class="nm">${a.name}</span><span class="cost">${readout}</span></div>
+      <div class="ds">${a.desc}</div>
+      ${a.noetic?`<div class="cost" style="margin-top:4px;color:#6a5a80">NOETIC ART &middot; DEPTH ${G.depth} POTENCY ${stratum().noetic}</div>`:""}
+    </button>`;
+  }
+  h += `<button class="btn abil" id="holdBtn" ${(u.acted||G.busy||G.over)?"disabled":""}>
+      <div class="t"><span class="nm">Hold</span><span class="cost">END UNIT</span></div>
+      <div class="ds">Spend nothing. Concede the initiative.</div></button>`;
+  ab.innerHTML = h;
+
+  hint.textContent = G.armed
+    ? "Designate a target on the field."
+    : (u.moved ? "Choose an ordinance." : "Click a green tile to advance, or issue an ordinance from where she stands.");
+}
+
+function renderRoster(){
+  const row = u => {
+    const dead = !u.alive ? " dead" : "";
+    const sel = (G.sel && G.sel.id===u.id) ? " sel" : "";
+    return `<div class="r${dead}${sel}" data-uid="${u.id}">
+      ${sigil(u.sig)}
+      <div class="n">${u.name}${u.isDecoy?" <span style='color:#6a5a80'>(proj)</span>":""}</div>
+      <div class="h">${u.alive ? (u.isDecoy ? "—" : u.hp + "/" + u.maxHp) : "—"}</div>
+    </div>`;
+  };
+  $("rosterFlame").innerHTML = G.units.filter(u=>u.side==="flame").map(row).join("");
+  $("rosterStar").innerHTML  = G.units.filter(u=>u.side==="star").map(row).join("");
+}
+
+/* ==========================================================
+   END SCREEN
+   ========================================================== */
+function endGame(win){
+  G.over = true; G.busy = false;
+  const acc = G.stats.shots ? Math.round(G.stats.hits/G.stats.shots*100) : 0;
+  const survivors = flameFighters();
+
+  logE("big", win ? "The Ghurazi reading is refused. The nave remains as recorded."
+                  : "The Flame reading fails. Another version of this floor is permitted to stand.");
+
+  $("endVerdict").textContent = win ? "HELD" : "UNMADE";
+  $("endVerdict").className = "verdict" + (win?"":" loss");
+  $("endKicker").textContent = win ? "Engagement I — Ossuar Kel — resolved in the Flame's favour"
+                                   : "Engagement I — Ossuar Kel — resolved against the Flame";
+  const body = $("endBody");
+  body.className = "body" + (win?"":" loss");
+  body.innerHTML = win
+    ? `The chant breaks. The Cinder-Nave settles into the shape it had before the Ghurazi
+       proposed another one, and the strata close over the argument like water over a dropped stone.<br><br>
+       ${survivors.length === 0
+            ? "Nothing walks out. The reading holds regardless."
+            : survivors.length === 1
+              ? survivors[0].name + " walks out of it alone. What walked in is a separate question."
+              : survivors.map(s=>s.name).join(" and ") + " walk out of it. What walked in is a separate question."}<br><br>
+       <b>You do not move through the stars. You decide which stars remain.</b><br>
+       This one remains. That was your decision, and it is now the only true one.`
+    : `The Flame goes out of the room in the ordinary way &mdash; not extinguished, simply
+       no longer the version of events that is being kept.<br><br>
+       Ossuar Kel is still there. It is simply somewhere the Ordo never reached, and the Ghurazi
+       have always been chanting, and no one is left to insist otherwise.<br><br>
+       <b>You do not move through the stars. You decide which stars remain.</b><br>
+       You decided. The Star decided further.`;
+
+  $("endStats").innerHTML =
+    `<div>Rounds <span>${G.round}</span></div>
+     <div>Deepest stratum <span>${STRATA[G.stats.deepest-1].name}</span></div>
+     <div>Strike accuracy <span>${acc}%</span></div>
+     <div>Noetic Arts worked <span>${G.stats.arts}</span></div>`;
+
+  renderAll();
+  setTimeout(()=> $("end").classList.add("on"), 700);
+}
+
+/* ==========================================================
+   WIRING
+   ========================================================== */
+function startBattle(){
+  newGame();
+  $("title").style.display = "none";
+  $("end").classList.remove("on");
+  $("battle").classList.add("on");
+  applyDepthVisuals();
+  beginFlamePhase();
+}
+
+document.addEventListener("click", ev => {
+  const t = ev.target;
+
+  const beg = t.closest && t.closest("#beginBtn");
+  if(beg){ startBattle(); return; }
+
+  const brief = t.closest && t.closest("#briefBtn");
+  if(brief){
+    alert(
+"AETERNII — DOCTRINE & CONTROLS\n\n"+
+"You command as Commander-Observer. Two units of the Flame against three of the Ghurazi Horde.\n\n"+
+"TURN\n"+
+"• Click a Flame unit → green tiles are reachable → click to advance.\n"+
+"• Then issue one Ordinance (attack or Noetic Art). Acting ends that unit's turn.\n"+
+"• End Flame Phase when finished. The Star answers.\n\n"+
+"THE DEPTH SYSTEM\n"+
+"I  Lux Stratum     — no drift\n"+
+"II  Velum Unda      — Flame accuracy -10, Star -5\n"+
+"III Abyssii Nihil   — Flame -20, Star -5, ruptures open in the floor\n"+
+"IV  Ruptura Originii— Flame -30, Star +0, Identity Corruption accrues each round\n\n"+
+"Depth decays downward on its own every 2 rounds. You may DESCEND voluntarily — deeper strata\n"+
+"empower the Noetic Arts (Memory Burn scales with Depth) at the cost of accuracy and identity.\n"+
+"Two ANCHOR RITES let you pull reality back up one layer.\n\n"+
+"NOETIC ARTS\n"+
+"• Existence Shift — assert a position up to 3 tiles away, ignoring bodies.\n"+
+"• Memory Burn — cannot miss; damage scales with the target's Truth Exposure and current Depth,\n"+
+"  and raises your own exposure.\n"+
+"• False Reality Projection — place a decoy. If the Star strikes it, the blow lands there instead.\n"+
+"  If unstruck for two rounds, it disperses.\n\n"+
+"Truth Exposure rises when a unit is hit, named by a Void-Throat, or held in the deep strata.\n"
+    );
+    return;
+  }
+
+  const tile = t.closest && t.closest(".tile");
+  if(tile){ tileClick(+tile.dataset.x, +tile.dataset.y); return; }
+
+  const ab = t.closest && t.closest("[data-abil]");
+  if(ab && !ab.disabled){ armAbility(ab.dataset.abil); return; }
+
+  if(t.closest && t.closest("#holdBtn")){ holdUnit(); return; }
+  if(t.closest && t.closest("#endTurnBtn")){ endFlamePhase(); return; }
+  if(t.closest && t.closest("#descendBtn")){ playerDescend(); return; }
+  if(t.closest && t.closest("#ascendBtn")){ playerAscend(); return; }
+  if(t.closest && t.closest("#abandonBtn")){
+    if(!G.over && confirm("Withdraw from the engagement? The nave will be read without you.")) endGame(false);
+    return;
+  }
+  if(t.closest && t.closest("#againBtn")){ startBattle(); return; }
+  if(t.closest && t.closest("#titleBtn")){
+    $("end").classList.remove("on");
+    $("battle").classList.remove("on");
+    $("title").style.display = "flex";
+    return;
+  }
+  const r = t.closest && t.closest("[data-uid]");
+  if(r && !r.classList.contains("dead")){
+    const u = G.units.find(x => x.id === r.dataset.uid);
+    if(u) selectUnit(u);
+    return;
+  }
+});
+
+document.addEventListener("keydown", ev => {
+  if(!G || G.over) return;
+  if(ev.key === "Escape"){
+    if(G.armed){ G.armed = null; G.mode = (G.sel && !G.sel.moved) ? "move" : "idle"; }
+    else { G.sel = null; G.mode = "idle"; }
+    renderAll();
+  }
+  if(ev.key === " " && G.phase === "flame" && !G.busy){ ev.preventDefault(); endFlamePhase(); }
+});
+
+applyDepthVisuals();
+</script>
+</body>
+</html>
