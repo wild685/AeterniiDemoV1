@@ -47,6 +47,8 @@ Hitboxes are capsules on the boss, **disabled by default**. Opening a window res
 
 ## Editor setup
 
+**Tooling:** Active workflow is Unreal Editor (Persona for montage sections/notifies, Control Rig if you need new animation, State Tree editor for `ST_BossCombat`) plus Cursor for C++. The Aura plugin stays listed in `AeterniiDemoV1.uproject` but is disabled/parked so it can be re-enabled later; it is not part of these setup steps.
+
 Suggested Content paths (create if missing):
 
 ```
