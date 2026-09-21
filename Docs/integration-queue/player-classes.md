@@ -2,7 +2,7 @@
 
 C++ `UPlayerClassData` (`UPrimaryDataAsset`, PrimaryAssetType `PlayerClass`) for the three playable classes. **This PR does not contain any `.uasset` / `.umap` / `.umeta` instances.** Claude Code creates the Data Assets in the editor; Priya soft-refs them from class-select HUD; Gary fills GAS tags.
 
-Canon names and numeric defaults come from `Docs/design-reference/Aeternii_Isometric_Demo.html` `CLASSES` (draft PR #3). Constructor / `ApplyCanonDefaults` hold those numbers in C++ — they are not baked into Content.
+Numeric defaults, display names, and roles come from `Docs/design-reference/Aeternii_Isometric_Demo.html` `CLASSES` (draft PR #3). **Order names** follow Jacob’s canon correction (via Nadia): Igni Orthodoxia, Genitorii Gothica, Luminarch Collegium — not the isometric demo’s older order strings. Constructor / `ApplyCanonDefaults` hold those values in C++ — they are not baked into Content.
 
 ## Expected Content paths
 
@@ -10,9 +10,9 @@ Create three `UPlayerClassData` assets (Data Asset factory → Player Class Data
 
 | ClassId | Order | Display name | Role | Asset |
 | --- | --- | --- | --- | --- |
-| `ordo` | Ordo Primae Flammae | Sworn of the Black Sigil | Bulwark · Melee | `/Game/Variant_Combat/Player/DA_PlayerClass_Ordo` |
-| `ignivarum` | Gothorum War-Breed | Ignivarum, Fire-Bearer | Inquisitor · Aggressor | `/Game/Variant_Combat/Player/DA_PlayerClass_Ignivarum` |
-| `luminarch` | Choir of the Quiet Star | Luminarch Navigator-Priest | Noetic · Ranged | `/Game/Variant_Combat/Player/DA_PlayerClass_Luminarch` |
+| `ordo` | Igni Orthodoxia | Sworn of the Black Sigil | Bulwark · Melee | `/Game/Variant_Combat/Player/DA_PlayerClass_Ordo` |
+| `ignivarum` | Genitorii Gothica | Ignivarum, Fire-Bearer | Inquisitor · Aggressor | `/Game/Variant_Combat/Player/DA_PlayerClass_Ignivarum` |
+| `luminarch` | Luminarch Collegium | Luminarch Navigator-Priest | Noetic · Ranged | `/Game/Variant_Combat/Player/DA_PlayerClass_Luminarch` |
 
 Object paths for `TSoftObjectPtr<UPlayerClassData>`:
 

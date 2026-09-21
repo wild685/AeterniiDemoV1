@@ -38,7 +38,7 @@ namespace PlayerClassCanon
 	{
 		FClassDef Def;
 		Def.ClassId = PlayerClassIds::Ordo();
-		Def.OrderName = LOCTEXT("Ordo_Order", "Ordo Primae Flammae");
+		Def.OrderName = LOCTEXT("Ordo_Order", "Igni Orthodoxia");
 		Def.DisplayName = LOCTEXT("Ordo_Name", "Sworn of the Black Sigil");
 		Def.RoleLabel = LOCTEXT("Ordo_Role", "Bulwark · Melee");
 		Def.FlavorText = LOCTEXT("Ordo_Flavor",
@@ -65,7 +65,7 @@ namespace PlayerClassCanon
 	{
 		FClassDef Def;
 		Def.ClassId = PlayerClassIds::Ignivarum();
-		Def.OrderName = LOCTEXT("Ignivarum_Order", "Gothorum War-Breed");
+		Def.OrderName = LOCTEXT("Ignivarum_Order", "Genitorii Gothica");
 		Def.DisplayName = LOCTEXT("Ignivarum_Name", "Ignivarum, Fire-Bearer");
 		Def.RoleLabel = LOCTEXT("Ignivarum_Role", "Inquisitor · Aggressor");
 		Def.FlavorText = LOCTEXT("Ignivarum_Flavor",
@@ -92,7 +92,7 @@ namespace PlayerClassCanon
 	{
 		FClassDef Def;
 		Def.ClassId = PlayerClassIds::Luminarch();
-		Def.OrderName = LOCTEXT("Luminarch_Order", "Choir of the Quiet Star");
+		Def.OrderName = LOCTEXT("Luminarch_Order", "Luminarch Collegium");
 		Def.DisplayName = LOCTEXT("Luminarch_Name", "Luminarch Navigator-Priest");
 		Def.RoleLabel = LOCTEXT("Luminarch_Role", "Noetic · Ranged");
 		Def.FlavorText = LOCTEXT("Luminarch_Flavor",
