@@ -326,6 +326,7 @@ void AGhuraziHordeEnemy::DoAttackTrace(FName DamageSourceBone)
 		return;
 	}
 
+	// Raider/Mauler: ACombatEnemy melee sweep → ICombatDamageable::ApplyDamage (not GAS).
 	Super::DoAttackTrace(DamageSourceBone);
 }
 
@@ -374,9 +375,8 @@ void AGhuraziHordeEnemy::DealHordeDamage(AActor* HitActor, const FVector& Damage
 		return;
 	}
 
-	// TODO(Gary): keep routing through ICombatDamageable::ApplyDamage until the GAS
-	// attribute set is in. If UCombatAttributeSet should own horde melee, swap this
-	// call site — do not add a second health attribute here.
+	// Settled: pack/horde weapon hits use ICombatDamageable::ApplyDamage / TakeDamage.
+	// Do not route through UCombatAttributeSet (GAS is Noetic Arts + Depth/Corruption).
 	Damageable->ApplyDamage(MeleeDamage, this, DamageLocation, Impulse);
 }
 

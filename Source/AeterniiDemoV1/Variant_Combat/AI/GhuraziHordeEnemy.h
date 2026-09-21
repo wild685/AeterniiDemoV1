@@ -34,10 +34,10 @@ enum class EGhuraziHordeArchetype : uint8
  *  from TelegraphDuration, plus a C++ commit timer so the tell is readable even
  *  before montage notifies exist. Do not add new StateTree task types for this.
  *
- *  TODO(Gary): Horde strikes still use ACombatEnemy's ApplyDamage / TakeDamage path
- *  (ICombatDamageable). Once UCombatAttributeSet lands on the GAS bootstrap, confirm
- *  whether Ghurazi hits should SetByCaller Data.Damage through that set instead.
- *  Do not invent a second attribute path here.
+ *  Damage (settled): pack/horde hits stay on ICombatDamageable::ApplyDamage /
+ *  TakeDamage, same as ACombatEnemy. Do not route through UCombatAttributeSet.
+ *  GAS/attribute set is for Noetic Arts + Depth/Corruption. Bosses may adopt GAS
+ *  later; pack enemies stay on the interface path.
  */
 UCLASS(abstract)
 class AGhuraziHordeEnemy : public ACombatEnemy
