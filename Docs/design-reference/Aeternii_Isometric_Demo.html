@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AETERNII — The Nave of the Ninth Vigil</title>
+<style>
+:root{
+  --void:#06070a;
+  --void2:#0a0c11;
+  --stone:#171a21;
+  --stone2:#20242e;
+  --line:#2b303c;
+  --bone:#cfc7b8;
+  --bone-dim:#8a8478;
+  --flame:#e0913a;
+  --flame-hi:#f4cd84;
+  --flame-deep:#8a4a16;
+  --star:#9a6fd0;
+  --star-hi:#c3a2ec;
+  --star-deep:#4a2f6b;
+  --blood:#a8342f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--void);color:var(--bone);
+  font-family:Georgia,'Times New Roman',serif;overflow:hidden;
+  -webkit-font-smoothing:antialiased;}
+body{user-select:none;cursor:default}
+#app{position:fixed;inset:0;overflow:hidden}
+
+/* ---------- shared chrome ---------- */
+.screen{position:absolute;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;
+  background:radial-gradient(ellipse at 50% 42%, #101219 0%, #08090d 55%, #050609 100%);}
+.screen.on{display:flex}
+.rule{width:min(520px,72vw);height:1px;background:linear-gradient(90deg,transparent,var(--line) 18%,var(--flame-deep) 50%,var(--line) 82%,transparent);margin:18px 0}
+.smallcaps{font-variant:small-caps;letter-spacing:.34em}
+.mono{font-family:'Courier New',monospace}
+.btn{
+  font-family:Georgia,serif;font-variant:small-caps;letter-spacing:.24em;font-size:15px;
+  color:var(--bone);background:linear-gradient(180deg,#161a22,#0d1015);
+  border:1px solid var(--line);padding:13px 34px;cursor:pointer;
+  transition:.18s border-color,.18s color,.18s background;position:relative;}
+.btn:hover:not(:disabled){border-color:var(--flame-deep);color:var(--flame-hi);background:linear-gradient(180deg,#1d2029,#121419)}
+.btn:disabled{opacity:.32;cursor:not-allowed}
+.btn::before,.btn::after{content:'';position:absolute;width:7px;height:7px;border:1px solid var(--flame-deep);opacity:.6}
+.btn::before{left:-1px;top:-1px;border-right:0;border-bottom:0}
+.btn::after{right:-1px;bottom:-1px;border-left:0;border-top:0}
+
+/* ---------- title ---------- */
+#title-mark{font-size:clamp(46px,9vw,104px);letter-spacing:.30em;font-variant:small-caps;
+  color:#e8e0d0;text-indent:.30em;
+  text-shadow:0 0 1px #000, 0 2px 0 #000;}
+#title-sub{font-size:12px;letter-spacing:.42em;color:var(--flame);font-variant:small-caps;margin-top:6px}
+#tagline{max-width:640px;margin:22px 24px 4px;font-size:clamp(14px,1.7vw,18px);
+  line-height:1.85;color:var(--bone-dim);font-style:italic}
+#tagline em{color:var(--flame-hi);font-style:italic}
+.title-foot{margin-top:34px;font-size:10px;letter-spacing:.3em;color:#4a4740;font-variant:small-caps}
+#sigil{width:112px;height:112px;margin-bottom:6px;opacity:.9}
+
+/* ---------- class select ---------- */
+#screen-class{justify-content:flex-start;padding:min(6vh,52px) 16px}
+.hdr{font-variant:small-caps;letter-spacing:.36em;font-size:13px;color:var(--flame)}
+.hdr-sub{font-size:11px;letter-spacing:.2em;color:#5f5b52;margin-top:8px;font-variant:small-caps}
+#class-row{display:flex;gap:16px;margin:22px 0 8px;flex-wrap:wrap;justify-content:center;max-width:1120px}
+.card{width:300px;min-height:392px;background:linear-gradient(180deg,#101319 0%,#0a0c11 100%);
+  border:1px solid var(--line);padding:20px 20px 18px;cursor:pointer;text-align:left;
+  display:flex;flex-direction:column;position:relative;transition:.2s border-color,.2s transform,.2s background}
+.card:hover{border-color:#4a3a2a;transform:translateY(-3px)}
+.card.sel{border-color:var(--flame)}
+.card.sel{background:linear-gradient(180deg,#181b22 0%,#0b0d12 100%)}
+.card.sel::before{content:'';position:absolute;inset:-1px;border:1px solid rgba(224,145,58,.28);pointer-events:none}
+.card-fig{height:104px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:12px}
+.card-order{font-size:9px;letter-spacing:.28em;color:#5f5b52;font-variant:small-caps}
+.card-name{font-size:19px;letter-spacing:.1em;color:#e6dccb;font-variant:small-caps;margin:5px 0 2px}
+.card-role{font-size:10px;letter-spacing:.24em;color:var(--flame);font-variant:small-caps}
+.card-flavor{font-size:12.5px;line-height:1.72;color:#8e8779;font-style:italic;margin:12px 0 12px;flex:1}
+.stat{display:flex;align-items:center;gap:8px;margin:5px 0}
+.stat-l{width:78px;font-size:9px;letter-spacing:.18em;color:#5f5b52;font-variant:small-caps;text-align:right}
+.pips{display:flex;gap:3px}
+.pip{width:13px;height:4px;background:#1e222b;border:1px solid #262b35}
+.pip.f{background:var(--flame-deep);border-color:var(--flame)}
+.card-abils{margin-top:12px;border-top:1px solid #1c2029;padding-top:10px}
+.ab-line{font-size:10.5px;letter-spacing:.05em;color:#7c7768;margin:4px 0}
+.ab-line b{color:#b7ab95;font-weight:normal;letter-spacing:.1em;font-variant:small-caps}
+#class-foot{display:flex;gap:16px;align-items:center;margin-top:14px}
+#class-tag{font-size:12px;color:#5a564e;font-style:italic;margin-top:16px;letter-spacing:.04em}
+
+/* ---------- game ---------- */
+#screen-game{display:none;position:absolute;inset:0;background:#040507}
+#screen-game.on{display:block}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+.hud{position:absolute;pointer-events:none;font-variant:small-caps}
+
+/* top center: objective + depth */
+#hud-top{top:0;left:50%;transform:translateX(-50%);width:min(560px,86vw);
+  padding:12px 18px 14px;text-align:center;
+  background:linear-gradient(180deg,rgba(4,5,8,.92),rgba(4,5,8,0));}
+#depth-name{font-size:11.5px;letter-spacing:.34em;color:var(--flame)}
+#depth-bar{display:flex;gap:3px;justify-content:center;margin:7px 0 8px}
+.dseg{width:58px;height:3px;background:#15181f;border:1px solid #21262f;position:relative;overflow:hidden}
+.dseg i{position:absolute;inset:0;width:0%;background:linear-gradient(90deg,var(--flame-deep),var(--flame));display:block}
+.dseg.corrupt i{background:linear-gradient(90deg,var(--star-deep),var(--star))}
+#objective{font-size:11px;letter-spacing:.2em;color:#7d7768}
+#objective b{color:var(--bone);font-weight:normal}
+
+/* bottom left: vitals */
+#hud-vit{left:22px;bottom:22px;width:266px}
+#v-name{font-size:10px;letter-spacing:.26em;color:#6a6459;margin-bottom:7px}
+.bar{height:13px;background:#0c0e13;border:1px solid #232833;position:relative;margin-bottom:6px}
+.bar i{position:absolute;left:0;top:0;bottom:0;display:block;transition:width .12s linear}
+.bar span{position:absolute;right:6px;top:-1px;font-size:9.5px;letter-spacing:.14em;
+  color:#a49d8e;font-family:'Courier New',monospace;line-height:14px}
+.bar u{position:absolute;left:6px;top:-1px;font-size:8.5px;letter-spacing:.2em;color:#5f5b52;
+  line-height:14px;text-decoration:none}
+#hp-f{background:linear-gradient(180deg,#7e2a24,#4a1713)}
+#cor-f{background:linear-gradient(180deg,#6b4a8f,#38254f)}
+#cor-bar{height:9px}
+
+/* bottom center: abilities */
+#hud-abils{left:50%;bottom:20px;transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
+.slot{width:68px;height:68px;background:linear-gradient(180deg,#12151c,#0a0c11);
+  border:1px solid #262b35;position:relative;overflow:hidden}
+.slot .key{position:absolute;top:3px;left:5px;font-size:9px;color:#5f5b52;font-family:'Courier New',monospace}
+.slot .nm{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:8.5px;
+  letter-spacing:.1em;color:#8d8676;padding:0 3px;line-height:1.15}
+.slot .gl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-bottom:8px}
+.slot .cd{position:absolute;left:0;right:0;bottom:0;background:rgba(4,5,8,.82);height:0%;
+  transition:height .05s linear}
+.slot .cdn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Courier New',monospace;font-size:15px;color:#9a927f;padding-bottom:6px}
+.slot.ready{border-color:#3a3020}
+.slot.ready:hover{border-color:var(--flame-deep)}
+
+/* bottom right: log */
+#hud-log{right:22px;bottom:22px;width:290px;text-align:right}
+.lg{font-size:10.5px;letter-spacing:.08em;color:#6b6559;line-height:1.6;font-variant:normal;
+  font-style:italic;opacity:0;animation:lgin .35s forwards}
+.lg.f{color:#b08a52}.lg.s{color:#8f6dbb}.lg.d{color:#a05450}.lg.g{color:#9b9282}
+@keyframes lgin{to{opacity:1}}
+
+/* top left: controls hint */
+#hud-help{left:22px;top:20px;font-size:9.5px;letter-spacing:.16em;color:#4b4841;line-height:1.9}
+#hud-help b{color:#6e6a5f;font-weight:normal}
+
+/* depth flash banner */
+#depth-flash{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;opacity:0}
+#depth-flash.go{animation:dflash 2.8s ease-out}
+#df-1{font-size:11px;letter-spacing:.5em;color:#6f6858;font-variant:small-caps}
+#df-2{font-size:30px;letter-spacing:.3em;color:#d9cbb0;font-variant:small-caps;margin-top:8px}
+#df-3{font-size:11px;letter-spacing:.22em;color:var(--star-hi);margin-top:10px;font-style:italic}
+@keyframes dflash{0%{opacity:0;letter-spacing:.4em}14%{opacity:1}72%{opacity:1}100%{opacity:0}}
+
+/* ---------- end ---------- */
+#end-verdict{font-size:11px;letter-spacing:.42em;color:#5f5b52;font-variant:small-caps}
+#end-title{font-size:clamp(30px,5.4vw,58px);letter-spacing:.24em;font-variant:small-caps;
+  color:#e6dccb;margin-top:10px}
+#end-body{max-width:600px;margin:20px 24px 0;font-size:14.5px;line-height:1.95;
+  color:#867f71;font-style:italic}
+#end-stats{display:flex;gap:34px;margin:28px 0 8px;flex-wrap:wrap;justify-content:center}
+.es{text-align:center}
+.es b{display:block;font-family:'Courier New',monospace;font-size:22px;color:#c9bfa9;font-weight:normal}
+.es i{display:block;font-size:9px;letter-spacing:.24em;color:#585449;font-style:normal;
+  font-variant:small-caps;margin-top:5px}
+#end-tag{margin-top:26px;font-size:13px;letter-spacing:.08em;color:#6a6459;font-style:italic}
+#end-tag em{color:var(--flame)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ============ TITLE ============ -->
+<section class="screen on" id="screen-title">
+  <svg id="sigil" viewBox="0 0 100 100">
+    <g fill="none" stroke="#8a4a16" stroke-width="1">
+      <circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="34" stroke="#3a2a1a"/>
+    </g>
+    <g fill="none" stroke="#2b303c" stroke-width="1">
+      <path d="M50 6 L50 94 M6 50 L94 50"/>
+      <path d="M19 19 L81 81 M81 19 L19 81" stroke="#1d222b"/>
+    </g>
+    <path d="M50 22 C58 34 66 40 66 52 C66 63 59 71 50 78 C41 71 34 63 34 52 C34 40 42 34 50 22 Z"
+          fill="#0b0d12" stroke="#e0913a" stroke-width="1.1"/>
+    <path d="M50 36 C54 44 58 47 58 54 C58 61 54 65 50 69 C46 65 42 61 42 54 C42 47 46 44 50 36 Z"
+          fill="#e0913a" opacity=".16" stroke="#f4cd84" stroke-width=".6"/>
+    <circle cx="50" cy="50" r="2.4" fill="#f4cd84"/>
+  </svg>
+  <h1 id="title-mark">Aeternii</h1>
+  <div id="title-sub">Ignivarum &nbsp;·&nbsp; Vertical Slice II &nbsp;·&nbsp; Isometric Action</div>
+  <div class="rule"></div>
+  <p id="tagline">“You do not move through the stars. <em>You decide which stars remain.</em>”</p>
+  <p style="max-width:560px;margin:16px 24px 0;font-size:12.5px;line-height:1.9;color:#5e5a51">
+    The Aeonic Wound has not closed. Beneath the Basilica Ossuarii the strata are thinning,
+    and the Ghurazi have found the seam. Take a body. Take a vow. Descend.
+  </p>
+  <div style="margin-top:34px"><button class="btn" id="btn-begin">Take the Vigil</button></div>
+  <div class="title-foot">Commander-Observer Protocol &nbsp;·&nbsp; Flame-Aligned Deployment</div>
+</section>
+
+<!-- ============ CLASS SELECT ============ -->
+<section class="screen" id="screen-class">
+  <div class="hdr">Choose the Body You Will Wear</div>
+  <div class="hdr-sub">Basilica Ossuarii &nbsp;—&nbsp; Nave of the Ninth Vigil &nbsp;—&nbsp; Depth I, Lux Stratum</div>
+  <div id="class-row"></div>
+  <div id="class-tag">“You do not move through the stars. You decide which stars remain.”</div>
+  <div id="class-foot">
+    <button class="btn" id="btn-back">Withdraw</button>
+    <button class="btn" id="btn-descend" disabled>Descend</button>
+  </div>
+</section>
+
+<!-- ============ GAME ============ -->
+<section id="screen-game">
+  <canvas id="cv"></canvas>
+
+  <div class="hud" id="hud-help">
+    <b>HOLD LEFT-CLICK</b> or <b>WASD</b> — move<br>
+    <b>CLICK A FOE</b> — engage &nbsp;·&nbsp; attacks are automatic in reach<br>
+    <b>1 / 2 / 3</b> (or <b>Q / E / R</b>) — Noetic Arts, cast at cursor
+  </div>
+
+  <div class="hud" id="hud-top">
+    <div id="depth-name">Depth I &nbsp;·&nbsp; Lux Stratum</div>
+    <div id="depth-bar">
+      <div class="dseg"><i></i></div><div class="dseg"><i></i></div>
+      <div class="dseg"><i></i></div><div class="dseg"><i></i></div>
+    </div>
+    <div id="objective">Purge the nave &nbsp;<b><span id="obj-n">0</span> / <span id="obj-t">24</span></b></div>
+  </div>
+
+  <div class="hud" id="hud-vit">
+    <div id="v-name">—</div>
+    <div class="bar" id="hp-bar"><i id="hp-f" style="width:100%"></i><u>Vitae</u><span id="hp-t">0</span></div>
+    <div class="bar" id="cor-bar"><i id="cor-f" style="width:0%"></i><u>Corruption</u><span id="cor-t">0%</span></div>
+  </div>
+
+  <div class="hud" id="hud-abils"></div>
+  <div class="hud" id="hud-log"></div>
+
+  <div id="depth-flash">
+    <div id="df-1">The strata part</div>
+    <div id="df-2">Velum Unda</div>
+    <div id="df-3">minor distortions</div>
+  </div>
+</section>
+
+<!-- ============ END ============ -->
+<section class="screen" id="screen-end">
+  <div id="end-verdict">Record of the Observer</div>
+  <h2 id="end-title">Extraction</h2>
+  <div class="rule"></div>
+  <p id="end-body"></p>
+  <div id="end-stats"></div>
+  <div id="end-tag">“You do not move through the stars. <em>You decide which stars remain.</em>”</div>
+  <div style="margin-top:30px;display:flex;gap:16px">
+    <button class="btn" id="btn-again">Take Another Vigil</button>
+    <button class="btn" id="btn-title">Return to the Sigil</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   AETERNII — Vertical Slice II : Isometric Action
+   Single-file, zero-dependency, Canvas 2D.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------- math */
+const TW = 76, TH = 38, ZH = 30;          // iso tile width/height, z unit
+const clamp = (v,a,b)=> v<a?a:(v>b?b:v);
+const lerp  = (a,b,t)=> a+(b-a)*t;
+const dist2 = (ax,ay,bx,by)=>{const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;};
+const dist  = (ax,ay,bx,by)=> Math.hypot(ax-bx,ay-by);
+const rnd   = (a,b)=> a+Math.random()*(b-a);
+const rndi  = (a,b)=> Math.floor(rnd(a,b+1));
+const pick  = a => a[Math.floor(Math.random()*a.length)];
+function hash2(x,y){ let h = x*374761393 + y*668265263; h=(h^(h>>13))*1274126177; return ((h^(h>>16))>>>0)/4294967296; }
+
+function toScreen(x,y,z){ return { x:(x-y)*(TW/2), y:(x+y)*(TH/2) - (z||0)*ZH }; }
+function toWorld(sx,sy){ const a=sx/(TW/2), b=sy/(TH/2); return { x:(b+a)/2, y:(b-a)/2 }; }
+
+/* ---------------------------------------------------------------- level */
+const GW = 19, GH = 36;                 // grid width (x), length (y)
+const T_VOID=0, T_FLOOR=1, T_WALL=2, T_COL=3, T_RUBBLE=4, T_BRAZ=5, T_DAIS=6, T_RACK=7;
+
+const level = {
+  t:  new Uint8Array(GW*GH),
+  h:  new Float32Array(GW*GH),          // top height (z units)
+  lit:new Float32Array(GW*GH),          // baked light 0..1
+  warm:new Float32Array(GW*GH),         // warmth of that light 0..1
+  blocked:new Uint8Array(GW*GH),
+  braziers:[], spawns:[], decor:[]
+};
+const idx = (x,y)=> y*GW+x;
+const inB = (x,y)=> x>=0 && y>=0 && x<GW && y<GH;
+const tileAt = (x,y)=> inB(x,y) ? level.t[idx(x,y)] : T_VOID;
+const isBlocked = (x,y)=> !inB(x,y) || level.blocked[idx(x,y)]===1;
+
+function buildLevel(){
+  const {t,h,blocked} = level;
+  t.fill(T_VOID); h.fill(0); blocked.fill(1);
+
+  // --- nave floor: x 2..16, y 1..34
+  for(let y=1;y<GH-1;y++) for(let x=2;x<=GW-3;x++){ t[idx(x,y)]=T_FLOOR; blocked[idx(x,y)]=0; }
+
+  // --- outer shell.  FAR walls (low x / low y) rise the full height of the nave;
+  //     NEAR walls (high x / high y) are cut down to a ledge so the camera sees in.
+  const WALL_TALL = 6.4, WALL_LEDGE = 0.6;
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){
+    const far  = (x<=1) || (y<=1);
+    const near = (x>=GW-2) || (y>=GH-2);
+    if(!far && !near) continue;
+    t[idx(x,y)]=T_WALL; blocked[idx(x,y)]=1;
+    h[idx(x,y)] = near ? WALL_LEDGE : WALL_TALL;
+  }
+  // apse: the far wall behind the sanctuary stands higher still
+  for(let x=2;x<=GW-3;x++){ h[idx(x,0)]=7.4; h[idx(x,1)]=7.0; }
+  // clerestory windows, aligned to the light shafts baked below
+  level.windows=[];
+  for(let y=6;y<GH-4;y+=6){ level.windows.push({side:'x', x:1, y}); }
+  for(let x=5;x<=13;x+=4){ level.windows.push({side:'y', x, y:1}); }
+
+  // --- raised sanctuary dais (apse end)
+  for(let y=2;y<=5;y++) for(let x=6;x<=12;x++){
+    if(tileAt(x,y)!==T_FLOOR) continue;
+    t[idx(x,y)]=T_DAIS; h[idx(x,y)]= (y<=3)?0.42:0.21; blocked[idx(x,y)]=0;
+  }
+
+  // --- colonnade: two rows dividing nave from aisles
+  for(let y=8;y<=30;y+=4){
+    for(const x of [5,13]){
+      t[idx(x,y)]=T_COL; h[idx(x,y)]=5.6; blocked[idx(x,y)]=1;
+    }
+  }
+  // --- ossuary racks in the aisles (low, blocking, scenery)
+  const racks=[[3,9],[3,10],[15,13],[15,14],[3,20],[3,21],[15,25],[15,26],[3,28],[15,8]];
+  for(const [x,y] of racks){ if(tileAt(x,y)===T_FLOOR){ t[idx(x,y)]=T_RACK; h[idx(x,y)]=0.95; blocked[idx(x,y)]=1; } }
+
+  // --- rubble in the nave (navigation interest)
+  const rub=[[8,12],[9,12],[10,17],[7,22],[11,23],[9,28],[6,16],[12,30],[8,33]];
+  for(const [x,y] of rub){ if(tileAt(x,y)===T_FLOOR){ t[idx(x,y)]=T_RUBBLE; h[idx(x,y)]=0.55; blocked[idx(x,y)]=1; } }
+
+  // --- braziers (light + landmarks)
+  const brz=[[7,4],[11,4],[4,12],[14,12],[4,24],[14,24],[8,31],[10,31]];
+  for(const [x,y] of brz){
+    if(!inB(x,y)) continue;
+    t[idx(x,y)]=T_BRAZ; h[idx(x,y)]=1.15; blocked[idx(x,y)]=1;
+    level.braziers.push({x:x+.5,y:y+.5,ph:Math.random()*6.28,r:6.4});
+  }
+
+  // --- ingress points for the Ghurazi (nave mouth + aisle seams)
+  level.props = [ {kind:'gate', x:9.5, y:1.9}, {kind:'altar', x:9.5, y:4.2} ];
+
+  level.spawns = [ {x:9.5,y:33.5},{x:7.5,y:33.5},{x:11.5,y:33.5},
+                   {x:3.5,y:31.5},{x:15.5,y:31.5},
+                   {x:3.5,y:17.5},{x:15.5,y:17.5},
+                   {x:3.5,y:6.5},{x:15.5,y:6.5} ];
+
+  bakeLight();
+}
+
+function bakeLight(){
+  const {lit,warm}=level;
+  for(let y=0;y<GH;y++) for(let x=0;x<GW;x++){
+    const i=idx(x,y);
+    // cold ambient from the clerestory: brighter along the nave axis, falls off in aisles
+    const axis = 1 - Math.min(1, Math.abs((x+0.5)-9)/7.5);
+    let amb = 0.13 + 0.20*axis*axis;
+    // shafts falling from the clerestory every 6 tiles: the nave's lighting spine
+    const shaft = Math.max(0, Math.cos(((y+0.5)/6)*Math.PI*2))**5;
+    amb += 0.46*shaft*(0.32+0.68*axis);
+    let w=0, l=amb;
+    for(const b of level.braziers){
+      const d = dist(x+.5,y+.5,b.x,b.y);
+      const f = Math.max(0, 1 - d/b.r); const ff = f*f;
+      l += 0.95*ff; w += 1.25*ff;
+    }
+    lit[i]  = clamp(l,0,1.45);
+    warm[i] = clamp(w,0,1);
+  }
+}
+
+/* ------------------------------------------------------------ pathfinding */
+const _pf = { g:new Float32Array(GW*GH), f:new Float32Array(GW*GH), came:new Int32Array(GW*GH),
+              open:new Uint8Array(GW*GH), closed:new Uint8Array(GW*GH), stamp:new Int32Array(GW*GH), gen:0 };
+function findPath(sx,sy,tx,ty){
+  sx=clamp(sx|0,0,GW-1); sy=clamp(sy|0,0,GH-1); tx=clamp(tx|0,0,GW-1); ty=clamp(ty|0,0,GH-1);
+  if(isBlocked(tx,ty)){                      // snap to nearest walkable
+    let best=null,bd=1e9;
+    for(let r=1;r<=4 && !best;r++)
+      for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){
+        const nx=tx+dx, ny=ty+dy; if(isBlocked(nx,ny)) continue;
+        const d=dx*dx+dy*dy; if(d<bd){bd=d;best=[nx,ny];}
+      }
+    if(!best) return null; tx=best[0]; ty=best[1];
+  }
+  if(sx===tx&&sy===ty) return [];
+  const P=_pf; P.gen++; const gen=P.gen;
+  const start=idx(sx,sy), goal=idx(tx,ty);
+  const H=(i)=>{ const x=i%GW,y=(i/GW)|0; const dx=Math.abs(x-tx),dy=Math.abs(y-ty);
+                 return (dx+dy) + (Math.SQRT2-2)*Math.min(dx,dy); };
+  P.stamp[start]=gen; P.g[start]=0; P.f[start]=H(start); P.came[start]=-1;
+  P.open[start]=1; P.closed[start]=0;
+  const list=[start]; let guard=0;
+  while(list.length && guard++<9000){
+    let bi=0,bf=1e9;
+    for(let k=0;k<list.length;k++){ const n=list[k]; if(P.f[n]<bf){bf=P.f[n];bi=k;} }
+    const cur=list[bi]; list.splice(bi,1); P.open[cur]=0; P.closed[cur]=1;
+    if(cur===goal){
+      const out=[]; let n=cur;
+      while(n!==-1){ out.push({x:(n%GW)+0.5, y:((n/GW)|0)+0.5}); n=P.came[n]; }
+      out.reverse(); out.shift(); return out;
+    }
+    const cx=cur%GW, cy=(cur/GW)|0;
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+      if(!dx&&!dy) continue;
+      const nx=cx+dx, ny=cy+dy;
+      if(isBlocked(nx,ny)) continue;
+      if(dx&&dy && (isBlocked(cx+dx,cy)||isBlocked(cx,cy+dy))) continue; // no corner cut
+      const ni=idx(nx,ny);
+      if(P.stamp[ni]!==gen){ P.stamp[ni]=gen; P.g[ni]=1e9; P.f[ni]=1e9; P.came[ni]=-1; P.open[ni]=0; P.closed[ni]=0; }
+      if(P.closed[ni]) continue;
+      const ng = P.g[cur] + ((dx&&dy)?1.4142:1);
+      if(ng < P.g[ni]){
+        P.g[ni]=ng; P.f[ni]=ng+H(ni); P.came[ni]=cur;
+        if(!P.open[ni]){ P.open[ni]=1; list.push(ni); }
+      }
+    }
+  }
+  return null;
+}
+function losClear(ax,ay,bx,by){
+  const d=dist(ax,ay,bx,by); const n=Math.ceil(d/0.24);
+  for(let i=1;i<=n;i++){ const t=i/n; const x=lerp(ax,bx,t), y=lerp(ay,by,t);
+    if(isBlocked(x|0,y|0)) return false; }
+  return true;
+}
+function smoothPath(px,py,path){
+  if(!path||path.length<2) return path;
+  let i=path.length-1;
+  while(i>0){ if(losClear(px,py,path[i].x,path[i].y)) return path.slice(i); i--; }
+  return path;
+}
+
+/* --------------------------------------------------------------- classes */
+const CLASSES = [
+  {
+    id:'ordo', order:'Ordo Primae Flammae', name:'Sworn of the Black Sigil', role:'Bulwark · Melee',
+    flavor:'“I was told my name once. I gave it to the Flame for safekeeping, and it has not returned it. '+
+           'This is the arrangement. This is the vow.” — Knight-monk of the First Flame, relic-blade and sigil-plate.',
+    hp:230, armor:0.32, speed:3.05, dmg:24, atkCd:0.86, range:1.25, ranged:false, corrRate:0.72,
+    accent:'#e0913a', accent2:'#f4cd84',
+    stats:{Vitae:5,Alacrity:2,Noesis:2,Aegis:5},
+    abilities:['vigil_step','ashen_recitation','effigy_vow']
+  },
+  {
+    id:'ignivarum', order:'Gothorum War-Breed', name:'Ignivarum, Fire-Bearer', role:'Inquisitor · Aggressor',
+    flavor:'“Doubt is a kind of rot. I am the answer to rot.” — War-bred censer-bearer of the namesake order; '+
+           'burns the question and the questioner in one motion.',
+    hp:170, armor:0.16, speed:3.55, dmg:15, atkCd:0.44, range:1.15, ranged:false, corrRate:1.0,
+    accent:'#d9722c', accent2:'#f0a95e',
+    stats:{Vitae:3,Alacrity:5,Noesis:3,Aegis:2},
+    abilities:['censer_lunge','censure_lance','second_breath']
+  },
+  {
+    id:'luminarch', order:'Choir of the Quiet Star', name:'Luminarch Navigator-Priest', role:'Noetic · Ranged',
+    flavor:'“The pattern is not hidden. It is merely louder than you are.” — Psyker-navigator, harmonic-sensitive; '+
+           'reads the strata directly, and pays for the reading.',
+    hp:150, armor:0.10, speed:3.45, dmg:18, atkCd:0.60, range:6.4, ranged:true, corrRate:1.28,
+    accent:'#c9a55e', accent2:'#e8d29a',
+    stats:{Vitae:2,Alacrity:4,Noesis:5,Aegis:1},
+    abilities:['fold','unwriting','palindrome']
+  }
+];
+
+/* ------------------------------------------------------------- abilities */
+const ABIL = {
+  vigil_step:{ name:'Vigil Step', art:'Existence Shift', cd:7, rng:3.4,
+    desc:'Blink; 40% harm refused for 1.5s.' },
+  ashen_recitation:{ name:'Ashen Recitation', art:'Memory Burn', cd:6.5, rng:0,
+    desc:'Recite outward — 38 harm, foes slowed.' },
+  effigy_vow:{ name:'Effigy of the Vow', art:'False Reality', cd:17, rng:5,
+    desc:'A vow that is not you. Foes attend it.' },
+
+  censer_lunge:{ name:'Censer Lunge', art:'Existence Shift', cd:6, rng:4.6,
+    desc:'Blink through; scours all in the seam.' },
+  censure_lance:{ name:'Censure Lance', art:'Memory Burn', cd:5, rng:7.2,
+    desc:'A line of unmaking. Pierces.' },
+  second_breath:{ name:'Second Breath', art:'Temporal Echo', cd:18, rng:0,
+    desc:'Replay 5s of yourself. Corruption burns off.' },
+
+  fold:{ name:'Fold', art:'Existence Shift', cd:5, rng:5.6, desc:'Fold the interval. Arrive.' },
+  unwriting:{ name:'Unwriting', art:'Memory Burn', cd:4.2, rng:7,
+    desc:'Delete a place. 44 harm in radius.' },
+  palindrome:{ name:'Palindrome', art:'Temporal Echo', cd:16, rng:0,
+    desc:'Be where and what you were 3s ago.' }
+};
+
+/* --------------------------------------------------------------- depth */
+const DEPTHS = [
+  { n:'I',   name:'Lux Stratum',      note:'stable — the strata hold',
+    aggro:6.5, spd:1.00, dmg:1.00, corr:0.00, maxAlive:4, spawn:4.6, distort:0.00, wash:0.00 },
+  { n:'II',  name:'Velum Unda',       note:'minor distortions',
+    aggro:8.0, spd:1.12, dmg:1.10, corr:0.55, maxAlive:5, spawn:3.5, distort:0.9,  wash:0.05 },
+  { n:'III', name:'Abyssii Nihil',    note:'environmental chaos — ruptures',
+    aggro:10.5,spd:1.22, dmg:1.20, corr:1.30, maxAlive:6, spawn:2.7, distort:1.6,  wash:0.11 },
+  { n:'IV',  name:'Ruptura Originii', note:'identity degradation — severe risk',
+    aggro:99,  spd:1.34, dmg:1.32, corr:2.40, maxAlive:8, spawn:2.2, distort:2.6,  wash:0.18 }
+];
+const DEPTH_AT = [0, 0.20, 0.46, 0.74];   // progress thresholds
+
+/* -------------------------------------------------------------- enemies */
+const FOES = {
+  raider:{ label:'Ghurazi Raider', hp:48, dmg:8,  spd:2.5, rng:1.05, cd:1.35, wind:0.34, h:48, w:14 },
+  chanter:{label:'Ghurazi Chanter',hp:40, dmg:11, spd:1.9, rng:6.4, cd:3.1, wind:1.35, h:57, w:13, caster:true },
+  mauler:{ label:'Ghurazi Mauler', hp:130,dmg:18, spd:1.75,rng:1.45, cd:2.3, wind:0.72, h:68, w:23 }
+};
+
+/* ---------------------------------------------------------------- state */
+let G = null;
+function newGame(cls){
+  return {
+    cls, t:0, running:true, over:null,
+    kills:0, quota:22, depth:0, prog:0,
+    p:{ x:9.5, y:30.5, vx:0, vy:0, face:-Math.PI/2, hp:cls.hp, hpMax:cls.hp,
+        corr:0, atkT:0, swing:0, path:null, target:null, buffs:{}, hist:[], histT:0,
+        casting:0, chase:null, chaseT:0 },
+    foes:[], projectiles:[], fx:[], nums:[], hazards:[], decoy:null,
+    cd:[0,0,0], spawnT:2.0, hazT:6, cam:{x:0,y:0}, camInit:false,
+    gateOpen:false, gateT:0, log:[], elapsed:0, camShake:0
+  };
+}
+
+/* ---------------------------------------------------------------- canvas */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const oc = document.createElement('canvas');       // world buffer (for depth grade)
+const octx = oc.getContext('2d');
+let VW=0, VH=0, DPR=1;
+function resize(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  VW = cv.clientWidth || window.innerWidth; VH = cv.clientHeight || window.innerHeight;
+  cv.width = Math.max(2,(VW*DPR)|0); cv.height = Math.max(2,(VH*DPR)|0);
+  oc.width = cv.width; oc.height = cv.height;
+  ctx.setTransform(DPR,0,0,DPR,0,0); octx.setTransform(DPR,0,0,DPR,0,0);
+  buildVignette();
+}
+let vign=null;
+function buildVignette(){
+  vign = ctx.createRadialGradient(VW/2,VH*0.46,Math.min(VW,VH)*0.22, VW/2,VH*0.5,Math.max(VW,VH)*0.78);
+  vign.addColorStop(0,'rgba(0,0,0,0)'); vign.addColorStop(0.62,'rgba(0,0,0,0.26)');
+  vign.addColorStop(1,'rgba(0,0,0,0.80)');
+}
+window.addEventListener('resize', resize);
+
+/* ---------------------------------------------------------------- input */
+const IN = { mx:0, my:0, down:false, wx:9.5, wy:30.5, keys:{}, clickT:0, moved:0 };
+function updateCursorWorld(){
+  if(!G) return;
+  const w = toWorld(IN.mx - VW/2 + G.cam.x, IN.my - VH*0.56 + G.cam.y);
+  IN.wx = w.x; IN.wy = w.y;
+}
+cv.addEventListener('mousemove', e=>{ const r=cv.getBoundingClientRect();
+  IN.mx=e.clientX-r.left; IN.my=e.clientY-r.top; IN.moved++; updateCursorWorld(); });
+cv.addEventListener('mousedown', e=>{
+  if(e.button!==0) return; e.preventDefault();
+  const r=cv.getBoundingClientRect(); IN.mx=e.clientX-r.left; IN.my=e.clientY-r.top;
+  updateCursorWorld(); IN.down=true; IN.clickT=0;
+  if(!G||!G.running) return;
+  const f = foeUnderCursor();
+  if(f){ G.p.target=f; G.p.path=null; return; }
+  G.p.target=null;
+  const pt = findPath(G.p.x|0, G.p.y|0, IN.wx|0, IN.wy|0);
+  G.p.path = pt ? smoothPath(G.p.x,G.p.y,pt) : null;
+});
+window.addEventListener('mouseup', e=>{ if(e.button===0) IN.down=false; });
+cv.addEventListener('contextmenu', e=>e.preventDefault());
+window.addEventListener('keydown', e=>{
+  const k=e.key.toLowerCase(); IN.keys[k]=true;
+  if(!G||!G.running) return;
+  if(k==='1'||k==='q') castAbility(0);
+  if(k==='2'||k==='e') castAbility(1);
+  if(k==='3'||k==='r') castAbility(2);
+  if(['w','a','s','d',' '].includes(k)) e.preventDefault();
+});
+window.addEventListener('keyup', e=>{ IN.keys[e.key.toLowerCase()]=false; });
+window.addEventListener('blur', ()=>{ IN.keys={}; IN.down=false; });
+
+function foeUnderCursor(){
+  if(!G) return null;
+  let best=null, bd=1.05;
+  for(const f of G.foes){ if(f.dead) continue;
+    const d=dist(f.x,f.y,IN.wx,IN.wy); if(d<bd){bd=d;best=f;} }
+  return best;
+}
+
+/* ------------------------------------------------------------ collision */
+const PR = 0.30;                                    // entity radius (tiles)
+function fits(x,y,r){
+  r = r||PR;
+  for(const [ox,oy] of [[-r,-r],[r,-r],[-r,r],[r,r],[0,0]])
+    if(isBlocked((x+ox)|0,(y+oy)|0)) return false;
+  return true;
+}
+function moveEnt(e,dx,dy,r){
+  r=r||PR;
+  if(fits(e.x+dx,e.y+dy,r)){ e.x+=dx; e.y+=dy; return true; }
+  let ok=false;
+  if(dx && fits(e.x+dx,e.y,r)){ e.x+=dx; ok=true; }
+  if(dy && fits(e.x,e.y+dy,r)){ e.y+=dy; ok=true; }
+  return ok;
+}
+function clearSpot(x,y){
+  if(fits(x,y)) return {x,y};
+  for(let r=0.5;r<=4;r+=0.5) for(let a=0;a<12;a++){
+    const th=a/12*6.283, nx=x+Math.cos(th)*r, ny=y+Math.sin(th)*r;
+    if(fits(nx,ny)) return {x:nx,y:ny};
+  }
+  return {x:9.5,y:20.5};
+}
+
+/* ------------------------------------------------------------------ log */
+function log(msg,cls){
+  G.log.unshift({m:msg,c:cls||''});
+  if(G.log.length>6) G.log.pop();
+  const el=document.getElementById('hud-log');
+  el.innerHTML = G.log.map(l=>`<div class="lg ${l.c}">${l.m}</div>`).join('');
+}
+function num(x,y,txt,col,big){ G.nums.push({x,y,t:0,txt,col,big:!!big,ox:rnd(-8,8)}); }
+
+/* ------------------------------------------------------------ fx helpers */
+function fx(o){ o.t=0; G.fx.push(o); return o; }
+
+/* --------------------------------------------------------------- damage */
+function hurtFoe(f,amount,src){
+  if(f.dead) return;
+  f.hp -= amount; f.flash=0.16; f.showBar=2.2;
+  num(f.x,f.y,Math.round(amount), '#d6cbb4');
+  if(f.hp<=0){
+    f.dead=true; f.deadT=0; G.kills++;
+    G.prog = clamp(G.prog + 1/G.quota*0.86 , 0, 1);
+    // the Flame is memory — unmaking a Ghurazi returns a measure of what it took
+    const back = G.p.hpMax*0.032;
+    if(G.p.hp < G.p.hpMax){
+      G.p.hp = Math.min(G.p.hpMax, G.p.hp + back);
+      num(G.p.x, G.p.y, '+'+Math.round(back), 'rgba(224,145,58,0.85)');
+    }
+    if(G.depth>0) G.p.corr = Math.max(0, G.p.corr - 1.0);
+    log(`${f.def.label} unmade.`, 'g');
+    fx({k:'unmake', x:f.x, y:f.y, dur:0.6});
+    if(G.p.target===f) G.p.target=null;
+    updateObjective();
+    if(G.kills>=G.quota && !G.gateOpen){
+      G.gateOpen=true;
+      log('The Vigil Gate remembers you. It opens.', 'f');
+      fx({k:'gate', x:9.5, y:2.2, dur:1.6});
+    }
+  }
+}
+function hurtPlayer(amount, kind){
+  const p=G.p; if(!G.running) return;
+  const D=DEPTHS[G.depth];
+  let a = amount * D.dmg * (1 - G.cls.armor);
+  if(p.buffs.dr) a *= (1-p.buffs.dr.amt);
+  if(p.corr>50) a *= 1 + (p.corr-50)/250;          // corruption thins the self
+  p.hp -= a; num(p.x,p.y, '-'+Math.round(a), '#c98d88');
+  G.camShake = Math.min(0.5, G.camShake + a/260);
+  if(kind==='chant'){ addCorr(9); }
+  if(p.hp<=0){ p.hp=0; endGame('fall'); }
+}
+function addCorr(v){
+  const p=G.p; if(p.buffs.purge) v*=0.15;
+  p.corr = clamp(p.corr + v * G.cls.corrRate, 0, 100);
+  if(p.corr>=100) endGame('degrade');
+}
+
+/* ------------------------------------------------------------- abilities */
+function castAbility(slot){
+  const p=G.p; if(!G.running) return;
+  if(G.cd[slot]>0) return;
+  const key = G.cls.abilities[slot]; const A = ABIL[key];
+  const cx=IN.wx, cy=IN.wy;
+  const D=DEPTHS[G.depth];
+
+  const blinkTo = (maxR, damaging)=>{
+    let a=Math.atan2(cy-p.y, cx-p.x);
+    const want=Math.min(maxR, dist(p.x,p.y,cx,cy));
+    let bx=p.x, by=p.y;
+    for(let s=0.2; s<=want; s+=0.2){
+      const nx=p.x+Math.cos(a)*s, ny=p.y+Math.sin(a)*s;
+      if(!fits(nx,ny)) break; bx=nx; by=ny;
+    }
+    const ox=p.x, oy=p.y;
+    if(damaging){
+      for(const f of G.foes){ if(f.dead) continue;
+        const d=segPointDist(ox,oy,bx,by,f.x,f.y);
+        if(d<0.85) hurtFoe(f, damaging);
+      }
+    }
+    p.x=bx; p.y=by; p.path=null; p.face=a;
+    fx({k:'shift', ax:ox, ay:oy, bx, by, dur:0.42});
+    return dist(ox,oy,bx,by);
+  };
+
+  switch(key){
+    case 'vigil_step': {
+      blinkTo(A.rng, 0);
+      p.buffs.dr = {t:1.5, amt:0.40};
+      log('Vigil Step — the interval refuses you.', 'f');
+      break; }
+    case 'censer_lunge': {
+      blinkTo(A.rng, 26);
+      log('Censer Lunge — the seam is scoured.', 'f');
+      break; }
+    case 'fold': {
+      blinkTo(A.rng, 0);
+      log('Fold — the distance was never real.', 'f');
+      break; }
+
+    case 'ashen_recitation': {
+      let n=0;
+      for(const f of G.foes){ if(f.dead) continue;
+        if(dist(f.x,f.y,p.x,p.y) < 2.9){ hurtFoe(f,38); f.slow={t:2.2,amt:0.45}; n++; } }
+      fx({k:'recite', x:p.x, y:p.y, r:2.9, dur:0.55});
+      log(n? `Ashen Recitation — ${n} named and burned.` : 'Ashen Recitation — nothing near to name.', 'f');
+      break; }
+    case 'censure_lance': {
+      const a=Math.atan2(cy-p.y,cx-p.x);
+      let len=A.rng;
+      for(let s=0.25;s<=A.rng;s+=0.25){
+        if(!fits(p.x+Math.cos(a)*s, p.y+Math.sin(a)*s, 0.1)){ len=s; break; } }
+      const ex=p.x+Math.cos(a)*len, ey=p.y+Math.sin(a)*len;
+      let n=0;
+      for(const f of G.foes){ if(f.dead) continue;
+        if(segPointDist(p.x,p.y,ex,ey,f.x,f.y) < 0.72){ hurtFoe(f,46); n++; } }
+      p.face=a;
+      fx({k:'lance', ax:p.x, ay:p.y, bx:ex, by:ey, dur:0.4});
+      log(n? `Censure Lance — ${n} struck from the record.` : 'Censure Lance — the line finds nothing.', 'f');
+      break; }
+    case 'unwriting': {
+      const d=Math.min(A.rng, dist(p.x,p.y,cx,cy));
+      const a=Math.atan2(cy-p.y,cx-p.x);
+      const tx=p.x+Math.cos(a)*d, ty=p.y+Math.sin(a)*d;
+      p.face=a;
+      fx({k:'unwrite', x:tx, y:ty, r:2.0, dur:0.72, fired:false});
+      log('Unwriting — a place is being deleted.', 'f');
+      break; }
+
+    case 'effigy_vow': {
+      const d=Math.min(A.rng, dist(p.x,p.y,cx,cy));
+      const a=Math.atan2(cy-p.y,cx-p.x);
+      const sp=clearSpot(p.x+Math.cos(a)*d, p.y+Math.sin(a)*d);
+      G.decoy={ x:sp.x, y:sp.y, hp:95, hpMax:95, t:0, life:7.5 };
+      fx({k:'project', x:sp.x, y:sp.y, dur:0.5});
+      log('Effigy of the Vow — a self that is not the self.', 'f');
+      break; }
+    case 'second_breath': {
+      p.buffs.haste={t:5, spd:1.45, atk:0.55};
+      p.buffs.purge={t:5};
+      log('Second Breath — the last five seconds, again.', 'f');
+      break; }
+    case 'palindrome': {
+      const h=p.hist;
+      let rec=h.length? h[0] : null;
+      for(const r of h){ if(G.t - r.t >= 3.0){ rec=r; break; } }
+      if(rec){
+        const sp=clearSpot(rec.x,rec.y);
+        fx({k:'palin', ax:p.x, ay:p.y, bx:sp.x, by:sp.y, dur:0.6});
+        p.x=sp.x; p.y=sp.y; p.path=null;
+        p.hp = clamp(Math.max(p.hp, rec.hp), 0, p.hpMax);
+        p.corr = Math.max(0, Math.min(p.corr, rec.corr) - 14);
+        log('Palindrome — the sentence reads the same reversed.', 'f');
+      }
+      break; }
+  }
+  G.cd[slot] = A.cd;
+}
+function segPointDist(ax,ay,bx,by,px,py){
+  const dx=bx-ax, dy=by-ay; const l2=dx*dx+dy*dy;
+  if(l2<1e-8) return dist(ax,ay,px,py);
+  let t=((px-ax)*dx+(py-ay)*dy)/l2; t=clamp(t,0,1);
+  return dist(ax+dx*t, ay+dy*t, px, py);
+}
+
+/* --------------------------------------------------------------- attacks */
+function playerAttack(){
+  const p=G.p, C=G.cls;
+  let cdm = 1; if(p.buffs.haste) cdm=p.buffs.haste.atk;
+  if(p.corr>75) cdm *= 1.15;                       // the hands begin to disagree
+  p.atkT = C.atkCd * cdm;
+  p.swing = 0.001;
+  if(C.ranged){
+    const a = p.face;
+    G.projectiles.push({x:p.x,y:p.y,a,spd:12.5,dmg:C.dmg,life:0.9,friendly:true});
+  } else {
+    const a=p.face; let n=0;
+    for(const f of G.foes){ if(f.dead) continue;
+      const d=dist(f.x,f.y,p.x,p.y);
+      if(d > C.range+0.35) continue;
+      let da = Math.atan2(f.y-p.y, f.x-p.x)-a;
+      while(da>Math.PI)da-=6.283; while(da<-Math.PI)da+=6.283;
+      if(Math.abs(da) < 1.05){ hurtFoe(f, C.dmg*rnd(0.92,1.08)); n++; }
+    }
+    fx({k:'sweep', x:p.x, y:p.y, a, r:C.range+0.3, dur:0.22});
+  }
+}
+
+/* ------------------------------------------------------------ enemy spawn */
+function spawnFoe(kind, at){
+  const def = FOES[kind];
+  const s = at || pick(level.spawns);
+  const sp = clearSpot(s.x + rnd(-0.6,0.6), s.y + rnd(-0.6,0.6));
+  const scale = 1 + 0.13*G.depth;
+  const f = { kind, def, x:sp.x, y:sp.y, hp:def.hp*scale, hpMax:def.hp*scale,
+              face:Math.PI/2, atkT:rnd(0.3,1.1), wind:0, dead:false, deadT:0,
+              path:null, pathT:rnd(0,0.4), aggro:false, flash:0, showBar:0,
+              ing:0.55, bob:Math.random()*6.28, slow:null, tgt:null };
+  G.foes.push(f);
+  fx({k:'ingress', x:sp.x, y:sp.y, dur:0.6});
+  return f;
+}
+
+/* ------------------------------------------------------------ update loop */
+function update(dt){
+  const p=G.p, C=G.cls, D=DEPTHS[G.depth];
+  G.t+=dt; G.elapsed+=dt;
+
+  /* ---- depth progression: kills dominate, time trickles ---- */
+  G.prog = clamp(G.prog + dt*0.0042, 0, 1);
+  let nd=0; for(let i=3;i>=0;i--){ if(G.prog>=DEPTH_AT[i]){ nd=i; break; } }
+  if(nd!==G.depth){ const prev=G.depth; G.depth=nd; if(nd>=2 && prev<2) G.hazT=1.6; onDepthChange(nd); }
+
+  /* ---- passive corruption from the strata ---- */
+  if(D.corr>0) addCorr(D.corr*dt*0.62);
+  if(p.buffs.purge) p.corr = Math.max(0, p.corr - 6*dt);
+
+  /* ---- buffs ---- */
+  for(const k in p.buffs){ p.buffs[k].t-=dt; if(p.buffs[k].t<=0) delete p.buffs[k]; }
+
+  /* ---- position/HP history for Palindrome ---- */
+  p.histT-=dt;
+  if(p.histT<=0){ p.histT=0.12; p.hist.unshift({t:G.t,x:p.x,y:p.y,hp:p.hp,corr:p.corr});
+    if(p.hist.length>60) p.hist.pop(); }
+
+  /* ---- cooldowns ---- */
+  for(let i=0;i<3;i++) if(G.cd[i]>0) G.cd[i]=Math.max(0,G.cd[i]-dt);
+
+  /* ---- player movement ---- */
+  let spd = C.speed * (p.buffs.haste?p.buffs.haste.spd:1);
+  if(p.corr>60) spd *= 1 - (p.corr-60)/400;
+  let mvx=0,mvy=0;
+  const K=IN.keys;
+  const kx=(K.d?1:0)-(K.a?1:0), ky=(K.s?1:0)-(K.w?1:0);
+  if(kx||ky){
+    // screen-relative WASD -> iso world direction
+    const sx=kx, sy=ky;
+    const wdx = (sx/(TW/2) + sy/(TH/2))/2;
+    const wdy = (sy/(TH/2) - sx/(TW/2))/2;
+    const m = Math.hypot(wdx,wdy)||1;
+    mvx = wdx/m; mvy = wdy/m; p.path=null; p.target=null;
+  } else if(IN.down){
+    const f=foeUnderCursor();
+    if(f){ p.target=f; }
+    else {
+      const d=dist(p.x,p.y,IN.wx,IN.wy);
+      if(d>0.28){ const a=Math.atan2(IN.wy-p.y,IN.wx-p.x); mvx=Math.cos(a); mvy=Math.sin(a); p.path=null; }
+    }
+  }
+  if(!mvx && !mvy && p.target && !p.target.dead){
+    const T=p.target;
+    const d=dist(p.x,p.y,T.x,T.y);
+    const want = C.ranged ? C.range*0.82 : C.range*0.72;
+    if(d>want){
+      if(losClear(p.x,p.y,T.x,T.y)){
+        const a=Math.atan2(T.y-p.y,T.x-p.x); mvx=Math.cos(a); mvy=Math.sin(a); p.chase=null;
+      } else {
+        // a pier is in the way — walk around it rather than grinding into the stone
+        p.chaseT=(p.chaseT||0)-dt;
+        if(p.chaseT<=0 || !p.chase || !p.chase.length){
+          p.chaseT=0.4;
+          const pt=findPath(p.x|0,p.y|0,T.x|0,T.y|0);
+          p.chase = pt ? smoothPath(p.x,p.y,pt) : null;
+        }
+        if(p.chase && p.chase.length){
+          const w=p.chase[0];
+          if(dist(p.x,p.y,w.x,w.y)<0.3) p.chase.shift();
+          else { const a=Math.atan2(w.y-p.y,w.x-p.x); mvx=Math.cos(a); mvy=Math.sin(a); }
+        }
+      }
+    }
+  }
+  if(!mvx && !mvy && p.path && p.path.length){
+    const w=p.path[0];
+    const d=dist(p.x,p.y,w.x,w.y);
+    if(d<0.24){ p.path.shift(); }
+    else { const a=Math.atan2(w.y-p.y,w.x-p.x); mvx=Math.cos(a); mvy=Math.sin(a); }
+    if(p.path && !p.path.length) p.path=null;
+  }
+  if(mvx||mvy){
+    const before = {x:p.x,y:p.y};
+    moveEnt(p, mvx*spd*dt, mvy*spd*dt);
+    if(dist(before.x,before.y,p.x,p.y)>1e-4) p.face = Math.atan2(p.y-before.y, p.x-before.x);
+    p.walk = (p.walk||0) + dt*8;
+  }
+
+  /* ---- player facing / auto attack ---- */
+  let atkTarget = null;
+  if(p.target && !p.target.dead && dist(p.x,p.y,p.target.x,p.target.y) <= C.range+0.25) atkTarget=p.target;
+  if(!atkTarget && !p.target){
+    let bd=C.range+0.25, best=null;
+    for(const f of G.foes){ if(f.dead) continue; const d=dist(p.x,p.y,f.x,f.y); if(d<bd){bd=d;best=f;} }
+    atkTarget=best;
+  }
+  if(atkTarget){
+    p.face = Math.atan2(atkTarget.y-p.y, atkTarget.x-p.x);
+    if(p.atkT<=0) playerAttack();
+  }
+  if(p.atkT>0) p.atkT-=dt;
+  if(p.swing>0){ p.swing+=dt; if(p.swing>0.28) p.swing=0; }
+  if(p.target && p.target.dead) p.target=null;
+
+  /* ---- decoy ---- */
+  if(G.decoy){ G.decoy.t+=dt; if(G.decoy.t>G.decoy.life || G.decoy.hp<=0){
+    fx({k:'unproject',x:G.decoy.x,y:G.decoy.y,dur:0.4}); G.decoy=null; } }
+
+  /* ---- foes ---- */
+  for(const f of G.foes){
+    if(f.dead){ f.deadT+=dt; continue; }
+    if(f.ing>0){ f.ing-=dt; continue; }
+    if(f.flash>0) f.flash-=dt;
+    if(f.showBar>0) f.showBar-=dt;
+    if(f.slow){ f.slow.t-=dt; if(f.slow.t<=0) f.slow=null; }
+    f.bob += dt*4;
+
+    // choose a target: player, or the effigy (which pulls hard)
+    let tx=p.x, ty=p.y, tobj='p';
+    if(G.decoy){
+      const dp=dist(f.x,f.y,p.x,p.y), dd=dist(f.x,f.y,G.decoy.x,G.decoy.y);
+      if(dd*0.38 < dp){ tx=G.decoy.x; ty=G.decoy.y; tobj='d'; }
+    }
+    const dToT = dist(f.x,f.y,tx,ty);
+    if(!f.aggro && (dToT < D.aggro || f.hp<f.hpMax)) f.aggro=true;
+    if(!f.aggro){ continue; }
+
+    let fspd = f.def.spd * D.spd * (f.slow?1-f.slow.amt:1);
+
+    // windup / attack
+    if(f.wind>0){
+      f.wind-=dt;
+      if(f.wind<=0){
+        if(f.def.caster){
+          // reality-warp chant: a ring lands where the target WAS at cast time
+          G.hazards.push({x:f.castX, y:f.castY, r:1.9, t:0, warn:0.55, dmg:f.def.dmg, kind:'chant', done:false});
+        } else if(dist(f.x,f.y,tx,ty) < f.def.rng+0.45){
+          if(tobj==='d'){ G.decoy.hp-=f.def.dmg; num(G.decoy.x,G.decoy.y,Math.round(f.def.dmg),'#8f6dbb'); }
+          else hurtPlayer(f.def.dmg,'melee');
+          fx({k:'foeswing', x:f.x, y:f.y, a:Math.atan2(ty-f.y,tx-f.x), r:f.def.rng+0.3, dur:0.2});
+        }
+        f.atkT = f.def.cd;
+      }
+      continue;
+    }
+    if(f.atkT>0) f.atkT-=dt;
+
+    const inRange = dToT < f.def.rng;
+    const canSee = f.def.caster ? losClear(f.x,f.y,tx,ty) : true;
+    if(inRange && canSee && f.atkT<=0){
+      f.wind = f.def.wind; f.castX=tx; f.castY=ty;
+      f.face = Math.atan2(ty-f.y, tx-f.x);
+      if(f.def.caster) fx({k:'chantup', foe:f, dur:f.def.wind});
+      continue;
+    }
+
+    // approach (casters keep their distance)
+    let want = f.def.caster ? f.def.rng*0.7 : f.def.rng*0.72;
+    let ax=0, ay=0;
+    if(dToT > want){
+      f.pathT -= dt;
+      if(losClear(f.x,f.y,tx,ty)){
+        const a=Math.atan2(ty-f.y,tx-f.x); ax=Math.cos(a); ay=Math.sin(a); f.path=null;
+      } else {
+        if(f.pathT<=0 || !f.path || !f.path.length){
+          f.pathT = 0.55 + Math.random()*0.3;
+          const pt=findPath(f.x|0,f.y|0,tx|0,ty|0); f.path = pt? smoothPath(f.x,f.y,pt) : null;
+        }
+        if(f.path && f.path.length){
+          const w=f.path[0];
+          if(dist(f.x,f.y,w.x,w.y)<0.3) f.path.shift();
+          else { const a=Math.atan2(w.y-f.y,w.x-f.x); ax=Math.cos(a); ay=Math.sin(a); }
+        }
+      }
+    } else if(f.def.caster && dToT < want*0.62){
+      const a=Math.atan2(ty-f.y,tx-f.x); ax=-Math.cos(a); ay=-Math.sin(a); // back off
+    }
+    if(ax||ay){
+      moveEnt(f, ax*fspd*dt, ay*fspd*dt);
+      f.face=Math.atan2(ay,ax); f.walk=(f.walk||0)+dt*7;
+    }
+  }
+  // soft separation so the horde doesn't stack into one silhouette
+  for(let i=0;i<G.foes.length;i++){
+    const a=G.foes[i]; if(a.dead||a.ing>0) continue;
+    for(let j=i+1;j<G.foes.length;j++){
+      const b=G.foes[j]; if(b.dead||b.ing>0) continue;
+      const dx=b.x-a.x, dy=b.y-a.y; const d2=dx*dx+dy*dy;
+      const md=0.62;
+      if(d2 < md*md && d2>1e-6){
+        const d=Math.sqrt(d2); const push=(md-d)*0.5;
+        const ux=dx/d, uy=dy/d;
+        moveEnt(a,-ux*push,-uy*push); moveEnt(b, ux*push, uy*push);
+      }
+    }
+  }
+  G.foes = G.foes.filter(f=> !f.dead || f.deadT<0.9);
+
+  /* ---- projectiles ---- */
+  for(const pr of G.projectiles){
+    const st=pr.spd*dt;
+    pr.x+=Math.cos(pr.a)*st; pr.y+=Math.sin(pr.a)*st; pr.life-=dt;
+    if(!fits(pr.x,pr.y,0.06)) pr.life=0;
+    if(pr.friendly){
+      for(const f of G.foes){ if(f.dead||f.ing>0) continue;
+        if(dist(pr.x,pr.y,f.x,f.y)<0.45){ hurtFoe(f,pr.dmg*rnd(0.92,1.08)); pr.life=0; break; } }
+    }
+  }
+  G.projectiles = G.projectiles.filter(p=>p.life>0);
+
+  /* ---- hazards (chant rings + Abyssii ruptures) ---- */
+  for(const h of G.hazards){
+    h.t+=dt;
+    if(!h.done && h.t>=h.warn){
+      h.done=true;
+      if(dist(p.x,p.y,h.x,h.y) < h.r) hurtPlayer(h.dmg, h.kind==='chant'?'chant':'rupture');
+      if(G.decoy && dist(G.decoy.x,G.decoy.y,h.x,h.y)<h.r) G.decoy.hp-=h.dmg;
+    }
+  }
+  G.hazards = G.hazards.filter(h=> h.t < h.warn+0.65);
+
+  // Depth III+ : the floor itself ruptures near the player
+  if(G.depth>=2){
+    G.hazT -= dt;
+    if(G.hazT<=0){
+      G.hazT = (G.depth>=3? rnd(1.6,2.8) : rnd(3.0,4.6));
+      const a=rnd(0,6.283), r=rnd(1.4,4.2);
+      const hx=clamp(p.x+Math.cos(a)*r,2.5,GW-3.5), hy=clamp(p.y+Math.sin(a)*r,2.5,GH-2.5);
+      G.hazards.push({x:hx,y:hy,r:1.6,t:0,warn:1.05,dmg:14,kind:'rupture',done:false});
+    }
+  }
+
+  /* ---- spawns ---- */
+  const alive = G.foes.filter(f=>!f.dead).length;
+  if(!G.gateOpen){
+    G.spawnT -= dt;
+    if(G.spawnT<=0 && alive < D.maxAlive && G.kills + alive < G.quota + 4){
+      G.spawnT = D.spawn * rnd(0.8,1.2);
+      let kind='raider';
+      const roll=Math.random();
+      if(G.depth>=1 && roll>0.72) kind='chanter';
+      if(G.depth>=2 && roll>0.88) kind='mauler';
+      spawnFoe(kind);
+      if(G.depth>=2 && Math.random()<0.42) spawnFoe('raider');
+    }
+  }
+
+  /* ---- gate / extraction ---- */
+  if(G.gateOpen){
+    const d=dist(p.x,p.y,9.5,3.0);
+    if(d<1.5){ G.gateT+=dt; if(G.gateT>=1.6) endGame('extract'); }
+    else G.gateT = Math.max(0,G.gateT-dt*1.5);
+  }
+
+  /* ---- fx / numbers ---- */
+  for(const e of G.fx){
+    e.t+=dt;
+    if(e.k==='unwrite' && !e.fired && e.t>=0.36){
+      e.fired=true;
+      for(const f of G.foes){ if(f.dead) continue;
+        if(dist(f.x,f.y,e.x,e.y)<e.r) hurtFoe(f,44); }
+    }
+  }
+  G.fx = G.fx.filter(e=> e.t < e.dur);
+  for(const n of G.nums) n.t+=dt;
+  G.nums = G.nums.filter(n=>n.t<0.95);
+  if(G.camShake>0) G.camShake=Math.max(0,G.camShake-dt*1.6);
+
+  updateHud();
+}
+
+function onDepthChange(d){
+  const D=DEPTHS[d];
+  document.getElementById('depth-name').textContent = `Depth ${D.n} · ${D.name}`;
+  const fl=document.getElementById('depth-flash');
+  document.getElementById('df-2').textContent = D.name;
+  document.getElementById('df-3').textContent = D.note;
+  document.getElementById('df-1').textContent = d===3 ? 'The strata fail' : 'The strata part';
+  fl.classList.remove('go'); void fl.offsetWidth; fl.classList.add('go');
+  log(`— Depth ${D.n}: ${D.name}. ${D.note}. —`, 's');
+  if(d>=1) for(let i=0;i<d;i++){
+    if(G.foes.filter(f=>!f.dead).length >= D.maxAlive) break;
+    spawnFoe(i===0?'raider':(d>=2&&i===1?'mauler':'chanter'));
+  }
+}
+
+function updateObjective(){
+  const n=document.getElementById('obj-n');
+  if(n) n.textContent = Math.min(G.kills,G.quota);
+  if(G.gateOpen)
+    document.getElementById('objective').innerHTML = 'The Vigil Gate stands open — <b>ascend to the apse</b>';
+}
+
+/* ------------------------------------------------------------------ HUD */
+let hudSlots=[];
+function buildHud(){
+  const wrap=document.getElementById('hud-abils'); wrap.innerHTML='';
+  hudSlots=[];
+  const keys=['1','2','3'];
+  G.cls.abilities.forEach((id,i)=>{
+    const A=ABIL[id];
+    const el=document.createElement('div'); el.className='slot ready';
+    el.innerHTML = `<div class="key">${keys[i]}</div>
+      <div class="gl">${abilGlyph(id, G.cls.accent)}</div>
+      <div class="nm">${A.name}</div>
+      <div class="cd"></div><div class="cdn"></div>`;
+    el.title = `${A.name} — ${A.art}\n${A.desc}\nCooldown ${A.cd}s`;
+    wrap.appendChild(el);
+    hudSlots.push({el, cd:el.querySelector('.cd'), cdn:el.querySelector('.cdn'), max:A.cd});
+  });
+  document.getElementById('v-name').textContent = G.cls.name;
+  document.getElementById('obj-t').textContent = G.quota;
+  document.getElementById('obj-n').textContent = 0;
+  document.getElementById('objective').innerHTML =
+    'Purge the nave &nbsp;<b><span id="obj-n">0</span> / <span id="obj-t">'+G.quota+'</span></b>';
+  document.getElementById('depth-name').textContent = 'Depth I · Lux Stratum';
+  document.getElementById('hud-log').innerHTML='';
+}
+function abilGlyph(id,c){
+  const s=(p,extra)=>`<svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="${c}" stroke-width="1.1">${p}</svg>`;
+  switch(id){
+    case 'vigil_step': case 'censer_lunge': case 'fold':
+      return s(`<path d="M6 22 L14 8"/><path d="M16 22 L24 8"/><path d="M9 15 L21 15" opacity=".5"/>`);
+    case 'ashen_recitation':
+      return s(`<circle cx="15" cy="15" r="4"/><circle cx="15" cy="15" r="9" opacity=".55"/><circle cx="15" cy="15" r="12.5" opacity=".28"/>`);
+    case 'censure_lance':
+      return s(`<path d="M4 21 L26 9"/><path d="M6 24 L28 12" opacity=".45"/><path d="M22 7 L26 9 L24 13"/>`);
+    case 'unwriting':
+      return s(`<rect x="7" y="7" width="16" height="16" transform="rotate(45 15 15)"/><path d="M11 15 L19 15"/><circle cx="15" cy="15" r="2.2"/>`);
+    case 'effigy_vow':
+      return s(`<path d="M15 6 L20 12 L19 24 L11 24 L10 12 Z" stroke-dasharray="2.4 2.4"/><path d="M15 6 L15 24" opacity=".35"/>`);
+    case 'second_breath':
+      return s(`<path d="M15 4 A11 11 0 1 1 6 20" /><path d="M15 4 L11 8 M15 4 L19 8"/><path d="M15 10 L15 15 L19 18"/>`);
+    case 'palindrome':
+      return s(`<path d="M9 10 A7 7 0 1 0 15 6"/><path d="M15 2 L15 10 L21 6" opacity=".8"/><path d="M12 18 L18 18" opacity=".5"/>`);
+  }
+  return s(`<circle cx="15" cy="15" r="8"/>`);
+}
+function updateHud(){
+  const p=G.p;
+  document.getElementById('hp-f').style.width = (p.hp/p.hpMax*100)+'%';
+  document.getElementById('hp-t').textContent = Math.ceil(p.hp)+' / '+p.hpMax;
+  document.getElementById('cor-f').style.width = p.corr+'%';
+  document.getElementById('cor-t').textContent = Math.floor(p.corr)+'%';
+  for(let i=0;i<hudSlots.length;i++){
+    const s=hudSlots[i], v=G.cd[i];
+    s.cd.style.height = (v/s.max*100)+'%';
+    s.cdn.textContent = v>0 ? (v>=1? Math.ceil(v) : v.toFixed(1)) : '';
+    s.el.classList.toggle('ready', v<=0);
+  }
+  // depth bar
+  const segs=document.querySelectorAll('#depth-bar .dseg');
+  for(let i=0;i<4;i++){
+    const lo=DEPTH_AT[i], hi=(i<3?DEPTH_AT[i+1]:1);
+    const v=clamp((G.prog-lo)/(hi-lo),0,1);
+    segs[i].firstElementChild.style.width=(v*100)+'%';
+    segs[i].classList.toggle('corrupt', i>=2);
+  }
+}
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+function shade(hex, m){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  r=clamp(r*m,0,255)|0; g=clamp(g*m,0,255)|0; b=clamp(b*m,0,255)|0;
+  return `rgb(${r},${g},${b})`;
+}
+function tileColor(x,y,base){
+  const i=idx(x,y); const l=level.lit[i], w=level.warm[i];
+  const v=hash2(x,y);
+  const nave = (x>=6 && x<=12) ? 1.14 : 1.0;      // the processional stone is paler
+  const lum = (0.42 + l*1.05 + (v-0.5)*0.09) * nave;
+  const r = clamp((base[0]*lum + w*52),0,255)|0;
+  const g = clamp((base[1]*lum + w*28),0,255)|0;
+  const b = clamp((base[2]*lum + w*6 ),0,255)|0;
+  return `rgb(${r},${g},${b})`;
+}
+function isoBox(c,cx,cy,hw,hd,z0,z1,top,left,right,stroke){
+  const A=toScreen(cx-hw,cy-hd,z1), B=toScreen(cx+hw,cy-hd,z1),
+        C=toScreen(cx+hw,cy+hd,z1), D=toScreen(cx-hw,cy+hd,z1);
+  const Bb=toScreen(cx+hw,cy-hd,z0), Cb=toScreen(cx+hw,cy+hd,z0), Db=toScreen(cx-hw,cy+hd,z0);
+  // right face (+x)
+  c.fillStyle=right; c.beginPath(); c.moveTo(B.x,B.y); c.lineTo(C.x,C.y); c.lineTo(Cb.x,Cb.y); c.lineTo(Bb.x,Bb.y); c.closePath(); c.fill();
+  // left face (+y)
+  c.fillStyle=left; c.beginPath(); c.moveTo(C.x,C.y); c.lineTo(D.x,D.y); c.lineTo(Db.x,Db.y); c.lineTo(Cb.x,Cb.y); c.closePath(); c.fill();
+  // top
+  c.fillStyle=top; c.beginPath(); c.moveTo(A.x,A.y); c.lineTo(B.x,B.y); c.lineTo(C.x,C.y); c.lineTo(D.x,D.y); c.closePath(); c.fill();
+  if(stroke){ c.strokeStyle=stroke; c.lineWidth=1; c.stroke(); }
+}
+function diamond(c,x,y,z,inset){
+  const i=inset||0;
+  const A=toScreen(x+i,y+i,z), B=toScreen(x+1-i,y+i,z), C=toScreen(x+1-i,y+1-i,z), D=toScreen(x+i,y+1-i,z);
+  c.beginPath(); c.moveTo(A.x,A.y); c.lineTo(B.x,B.y); c.lineTo(C.x,C.y); c.lineTo(D.x,D.y); c.closePath();
+}
+function ellipseW(c,wx,wy,rx,ry,z){
+  const s=toScreen(wx,wy,z||0);
+  c.beginPath(); c.ellipse(s.x,s.y,rx,ry,0,0,6.283);
+}
+
+const VOID_PTS = (()=>{ const a=[]; let sd=1337;
+  const rr=()=>{ sd=(sd*1103515245+12345)&0x7fffffff; return sd/0x7fffffff; };
+  for(let i=0;i<90;i++) a.push({x:rr(),y:rr(),m:rr()});
+  return a; })();
+function drawVoid(c){
+  const D=DEPTHS[G.depth];
+  const g=c.createLinearGradient(0,0,0,VH);
+  g.addColorStop(0,'#05060a'); g.addColorStop(0.55,'#07080c'); g.addColorStop(1,'#030407');
+  c.fillStyle=g; c.fillRect(0,0,VW,VH);
+  // far light — the stars that remain. static, no twinkle spam.
+  const drift = (G.cam.x*0.012) % VW, dy=(G.cam.y*0.012) % VH;
+  for(const s of VOID_PTS){
+    let px=(s.x*VW - drift + VW)%VW, py=(s.y*VH - dy + VH)%VH;
+    const a = 0.05 + s.m*0.13;
+    c.fillStyle = (s.m>0.86 && D.wash>0) ? `rgba(154,111,208,${a*1.4})` : `rgba(180,178,190,${a})`;
+    c.fillRect(px|0, py|0, 1, 1);
+  }
+}
+function render(){
+  const c=octx, p=G.p, D=DEPTHS[G.depth];
+  // ---- camera
+  const ps=toScreen(p.x,p.y,0);
+  if(!G.camInit){ G.cam.x=ps.x; G.cam.y=ps.y; G.camInit=true; }
+  G.cam.x = lerp(G.cam.x, ps.x, 0.14);
+  G.cam.y = lerp(G.cam.y, ps.y, 0.14);
+  let shx=0, shy=0;
+  if(G.camShake>0){ shx=rnd(-1,1)*G.camShake*7; shy=rnd(-1,1)*G.camShake*5; }
+
+  c.setTransform(DPR,0,0,DPR,0,0);
+  drawVoid(c);
+  c.save();
+  c.translate(Math.round(VW/2 - G.cam.x + shx), Math.round(VH*0.56 - G.cam.y + shy));
+
+  // ---- visible tile bounds: project the four screen corners into world space
+  const corners=[[-VW/2, -VH*0.56],[VW/2,-VH*0.56],[VW/2,VH*0.44],[-VW/2,VH*0.44]];
+  let minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
+  for(const [sx,sy] of corners){
+    const w=toWorld(sx+G.cam.x, sy+G.cam.y);
+    minx=Math.min(minx,w.x); maxx=Math.max(maxx,w.x);
+    miny=Math.min(miny,w.y); maxy=Math.max(maxy,w.y);
+  }
+  const X0=clamp((minx|0)-3,0,GW-1), X1=clamp((maxx|0)+3,0,GW-1);
+  const Y0=clamp((miny|0)-3,0,GH-1), Y1=clamp((maxy|0)+5,0,GH-1);
+
+  /* ---------- 1. floor pass ---------- */
+  const FLOOR=[42,44,52], DAISC=[58,52,44];
+  for(let y=Y0;y<=Y1;y++) for(let x=X0;x<=X1;x++){
+    const t=tileAt(x,y);
+    if(t===T_VOID||t===T_WALL||t===T_COL) continue;
+    const z = (t===T_DAIS)? level.h[idx(x,y)] : 0;
+    const base = (t===T_DAIS)?DAISC:FLOOR;
+    // dais side faces
+    if(t===T_DAIS && z>0){
+      const sTop=tileColor(x,y,base);
+      isoBox(c, x+0.5,y+0.5, 0.5,0.5, 0, z, sTop, shade('#2a2a30',0.55+level.lit[idx(x,y)]*0.4), shade('#33333a',0.7+level.lit[idx(x,y)]*0.4), null);
+    } else {
+      c.fillStyle = tileColor(x,y,base);
+      diamond(c,x,y,z); c.fill();
+    }
+    // flagstone grout
+    c.strokeStyle='rgba(8,9,13,0.55)'; c.lineWidth=1; diamond(c,x,y,z); c.stroke();
+    // faint inscribed line-work down the nave centre (sacred geometry, not decoration spam)
+    if(x>=8&&x<=10 && t===T_FLOOR && (y%3===0)){
+      c.strokeStyle='rgba(224,145,58,0.06)'; diamond(c,x,y,0,0.28); c.stroke();
+    }
+  }
+
+  /* ---------- 2. ground decals: hazards, ability ground fx, gate ring ---------- */
+  drawGroundFx(c);
+
+  /* ---------- 3. sorted tall pass ---------- */
+  const items=[];
+  for(let y=Y0;y<=Y1;y++) for(let x=X0;x<=X1;x++){
+    const t=tileAt(x,y);
+    if(t===T_WALL||t===T_COL||t===T_RUBBLE||t===T_BRAZ||t===T_RACK)
+      items.push({s:x+y, k:'tile', x,y,t});
+  }
+  for(const pr of level.props) items.push({s:pr.x+pr.y, k:'prop', pr});
+  for(const f of G.foes) items.push({s:f.x+f.y, k:'foe', f});
+  for(const pr of G.projectiles) items.push({s:pr.x+pr.y, k:'proj', pr});
+  if(G.decoy) items.push({s:G.decoy.x+G.decoy.y, k:'decoy'});
+  items.push({s:p.x+p.y, k:'player'});
+  for(const e of G.fx) if(e.k==='chantup') items.push({s:e.foe.x+e.foe.y+0.01,k:'fx',e});
+  items.sort((a,b)=>a.s-b.s);
+
+  for(const it of items){
+    if(it.k==='tile') drawTileProp(c,it.x,it.y,it.t);
+    else if(it.k==='prop') drawProp(c,it.pr);
+    else if(it.k==='foe') drawFoe(c,it.f);
+    else if(it.k==='player') drawPlayer(c,p);
+    else if(it.k==='decoy') drawDecoy(c,G.decoy);
+    else if(it.k==='proj') drawProj(c,it.pr);
+    else if(it.k==='fx') drawChantUp(c,it.e);
+  }
+
+  /* ---------- 4. air fx (above everything) ---------- */
+  drawAirFx(c);
+  drawNumbers(c);
+  drawCursor(c);
+
+  c.restore();
+
+  /* ---------- 5. present with depth grade ---------- */
+  present(D);
+}
+
+/* ------------------------------------------------------------ props */
+function drawTileProp(c,x,y,t){
+  const i=idx(x,y), l=level.lit[i], w=level.warm[i];
+  const lum = 0.42 + l*0.8;
+  if(t===T_WALL){
+    const h=level.h[i];
+    const tall = h>2;
+    // masonry: the inner faces catch the shaft light, the tops sit in the vault's shadow
+    const fl = tall ? 0.34 + level.lit[i]*0.55 : 0.20 + level.lit[i]*0.22;
+    const top=`rgb(${(20*fl+w*8)|0},${(21*fl+w*4)|0},${(26*fl)|0})`;
+    const rgt=`rgb(${(58*fl+w*34)|0},${(58*fl+w*18)|0},${(66*fl)|0})`;
+    const lft=`rgb(${(40*fl+w*22)|0},${(40*fl+w*11)|0},${(47*fl)|0})`;
+    isoBox(c,x+0.5,y+0.5,0.5,0.5,0,h,top,lft,rgt,null);
+    if(!tall){
+      // a single inscribed line along the lip of the nave floor
+      const a=toScreen(x,y,h), b2=toScreen(x+1,y,h), d2=toScreen(x+1,y+1,h);
+      c.strokeStyle='rgba(224,145,58,0.07)'; c.lineWidth=1;
+      c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b2.x,b2.y); c.lineTo(d2.x,d2.y); c.stroke();
+    }
+    if(tall){
+      // coursing lines so the height reads
+      for(let k=1;k<=4;k++){
+        const zz=h*k/5;
+        const a=toScreen(x+1,y,zz), b2=toScreen(x+1,y+1,zz), d2=toScreen(x,y+1,zz);
+        c.strokeStyle='rgba(8,9,13,0.30)'; c.lineWidth=1;
+        c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b2.x,b2.y); c.lineTo(d2.x,d2.y); c.stroke();
+      }
+      drawWindow(c,x,y,h);
+    }
+    return;
+  }
+  if(t===T_COL){
+    const cx=x+0.5, cy=y+0.5, H=level.h[i];
+    const fade = occlusionFade(cx,cy);
+    if(fade<=0.02) return;
+    c.save(); if(fade<1) c.globalAlpha=fade;
+    const base=`rgb(${(56*lum+w*26)|0},${(56*lum+w*14)|0},${(64*lum)|0})`;
+    const shl =`rgb(${(40*lum+w*30)|0},${(40*lum+w*15)|0},${(47*lum)|0})`;
+    const drk =`rgb(${(20*lum+w*12)|0},${(20*lum+w*6)|0},${(26*lum)|0})`;
+    isoBox(c,cx,cy,0.42,0.42,0,0.34, base, drk, shl, null);      // plinth
+    isoBox(c,cx,cy,0.30,0.30,0.34,0.52, base, drk, shl, null);
+    isoBox(c,cx,cy,0.24,0.24,0.52,H-0.55, base, drk, shl, null);  // shaft
+    isoBox(c,cx,cy,0.38,0.38,H-0.55,H-0.18, base, drk, shl, null);// capital
+    isoBox(c,cx,cy,0.30,0.30,H-0.18,H, base, drk, shl, null);
+    // the vault springs from the capital — a single thin rib, no ornament spam
+    const capL=toScreen(cx-0.38,cy+0.38,H-0.36), capR=toScreen(cx+0.38,cy+0.38,H-0.36);
+    c.strokeStyle='rgba(10,11,15,0.5)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(capL.x,capL.y); c.lineTo(capR.x,capR.y); c.stroke();
+    // the black-flame band of the Ordo, cut into the shaft
+    const sb=toScreen(cx+0.24,cy+0.24,1.9);
+    c.strokeStyle='rgba(224,145,58,0.22)'; c.lineWidth=1.1;
+    c.beginPath(); c.moveTo(sb.x-22,sb.y-7); c.lineTo(sb.x,sb.y+4); c.lineTo(sb.x+22,sb.y-7); c.stroke();
+    c.restore();
+    return;
+  }
+  if(t===T_RACK){
+    const cx=x+0.5, cy=y+0.5;
+    const base=`rgb(${(36*lum+w*20)|0},${(35*lum+w*11)|0},${(40*lum)|0})`;
+    isoBox(c,cx,cy,0.44,0.44,0,0.9, base, shade('#1a1b21',0.5+l), shade('#26272e',0.6+l), null);
+    // ossuary niches: thin dark slots
+    const s=toScreen(cx+0.44,cy+0.44,0.62);
+    c.fillStyle='rgba(6,7,10,0.6)';
+    for(let k=0;k<3;k++){ c.fillRect(s.x-26+k*9, s.y-14, 5, 9); }
+    return;
+  }
+  if(t===T_RUBBLE){
+    const cx=x+0.5, cy=y+0.5;
+    for(let k=0;k<3;k++){
+      const v=hash2(x*7+k,y*13+k);
+      const ox=(v-0.5)*0.5, oy=(hash2(y+k,x+k)-0.5)*0.5;
+      const hgt=0.2+v*0.42, sz=0.13+v*0.14;
+      isoBox(c,cx+ox,cy+oy,sz,sz,0,hgt,
+        shade('#33353d',0.5+l*0.9), shade('#141519',0.6+l), shade('#212329',0.7+l), null);
+    }
+    return;
+  }
+  if(t===T_BRAZ){
+    const cx=x+0.5, cy=y+0.5;
+    isoBox(c,cx,cy,0.13,0.13,0,0.9, '#2b2c33','#141519','#1e1f25',null);
+    isoBox(c,cx,cy,0.30,0.30,0.9,1.12, '#3a3126','#191a1f','#26221b',null);
+    // contained flame: 3 thin tapered blades, slow, no bloom
+    const s=toScreen(cx,cy,1.12);
+    const tt=G.t*1.7 + (x*3+y*5);
+    for(let k=0;k<3;k++){
+      const ph=tt+k*2.1;
+      const hh=16+Math.sin(ph)*5 + k*3;
+      const sw=5-k*1.2;
+      const xo=Math.sin(ph*0.7)*2.4;
+      c.fillStyle = k===0? 'rgba(244,205,132,0.55)' : (k===1? 'rgba(224,145,58,0.38)':'rgba(138,74,22,0.28)');
+      c.beginPath();
+      c.moveTo(s.x-sw+xo, s.y-2);
+      c.quadraticCurveTo(s.x-sw*0.5+xo, s.y-hh*0.6, s.x+xo*1.4, s.y-hh);
+      c.quadraticCurveTo(s.x+sw*0.5+xo, s.y-hh*0.6, s.x+sw+xo, s.y-2);
+      c.closePath(); c.fill();
+    }
+    return;
+  }
+}
+
+/* ---- clerestory window cut into a tall far wall's inner face ---- */
+function drawWindow(c,x,y,h){
+  const W=level.windows; if(!W) return;
+  for(const win of W){
+    if(win.side==='x'){
+      if(x!==win.x || y!==win.y) continue;
+      // inner face is the +x face: from (x+1,y)->(x+1,y+1)
+      const z0=h*0.42, z1=h*0.90;
+      const a=toScreen(x+1,y+0.22,z1), b=toScreen(x+1,y+0.78,z1),
+            d=toScreen(x+1,y+0.78,z0), e=toScreen(x+1,y+0.22,z0);
+      paneGrad(c,a,b,d,e);
+    } else {
+      if(x!==win.x || y!==win.y) continue;
+      const z0=h*0.42, z1=h*0.90;
+      const a=toScreen(x+0.22,y+1,z1), b=toScreen(x+0.78,y+1,z1),
+            d=toScreen(x+0.78,y+1,z0), e=toScreen(x+0.22,y+1,z0);
+      paneGrad(c,a,b,d,e);
+    }
+  }
+}
+function paneGrad(c,a,b,d,e){
+  const g=c.createLinearGradient(a.x,a.y,d.x,d.y);
+  g.addColorStop(0,'rgba(196,190,172,0.60)');
+  g.addColorStop(0.55,'rgba(120,116,110,0.30)');
+  g.addColorStop(1,'rgba(40,40,48,0.10)');
+  c.fillStyle=g;
+  c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.lineTo(d.x,d.y); c.lineTo(e.x,e.y); c.closePath(); c.fill();
+  c.strokeStyle='rgba(10,11,15,0.55)'; c.lineWidth=1; c.stroke();
+  // single mullion — geometry, not tracery
+  const m1={x:(a.x+b.x)/2,y:(a.y+b.y)/2}, m2={x:(d.x+e.x)/2,y:(d.y+e.y)/2};
+  c.beginPath(); c.moveTo(m1.x,m1.y); c.lineTo(m2.x,m2.y); c.stroke();
+}
+
+/* ---- fade tall props that would stand between the camera and the player ---- */
+function occlusionFade(cx,cy){
+  const p=G.p;
+  if(cx+cy <= p.x+p.y) return 1;                    // sorts behind the player
+  const a=toScreen(cx,cy,0), b=toScreen(p.x,p.y,0);
+  const dx=Math.abs(a.x-b.x), dy=Math.abs(a.y-b.y);
+  if(dx < TW*0.85 && dy < TH*2.6) return 0.26;
+  return 1;
+}
+
+/* ---- sanctuary props ---- */
+function drawProp(c,pr){
+  if(pr.kind==='altar'){
+    const {x,y}=pr;
+    const l=level.lit[idx(x|0,y|0)]||0.4;
+    const lum=0.5+l*0.8;
+    isoBox(c,x,y,0.62,0.46,0.42,0.62, shade('#3a3630',lum), shade('#15161a',lum), shade('#26262c',lum), null);
+    isoBox(c,x,y,0.46,0.34,0.62,1.10, shade('#33302b',lum), shade('#131418',lum), shade('#222227',lum), null);
+    isoBox(c,x,y,0.70,0.52,1.10,1.26, shade('#443f36',lum), shade('#17181c',lum), shade('#2a2a30',lum), null);
+    // the vigil flame kept on the altar — one contained blade of light
+    const s=toScreen(x,y,1.26);
+    const ph=G.t*1.8, hh=22+Math.sin(ph)*4;
+    c.fillStyle='rgba(244,205,132,0.55)';
+    c.beginPath(); c.moveTo(s.x-4,s.y-2);
+    c.quadraticCurveTo(s.x-2,s.y-hh*0.6,s.x+Math.sin(ph*0.6)*1.6,s.y-hh);
+    c.quadraticCurveTo(s.x+2,s.y-hh*0.6,s.x+4,s.y-2); c.closePath(); c.fill();
+    c.strokeStyle='rgba(224,145,58,0.30)'; c.lineWidth=1;
+    c.beginPath(); c.ellipse(s.x,s.y,26,11,0,0,6.283); c.stroke();
+    return;
+  }
+  if(pr.kind==='gate'){
+    const {x,y}=pr;
+    const open=G.gateOpen;
+    const lum=0.75;
+    // two piers and a lintel: the Vigil Gate
+    for(const ox of [-1.35,1.35])
+      isoBox(c,x+ox,y,0.30,0.30,0,4.6, shade('#4a463e',lum), shade('#16171b',lum), shade('#2c2c33',lum), null);
+    isoBox(c,x,y,1.68,0.26,4.6,5.25, shade('#4a463e',lum), shade('#16171b',lum), shade('#2c2c33',lum), null);
+    // the aperture itself
+    const tl=toScreen(x-1.05,y,4.55), tr=toScreen(x+1.05,y,4.55),
+          br=toScreen(x+1.05,y,0.05), bl=toScreen(x-1.05,y,0.05);
+    c.fillStyle = open ? 'rgba(20,14,8,0.92)' : 'rgba(8,9,12,0.95)';
+    c.beginPath(); c.moveTo(tl.x,tl.y); c.lineTo(tr.x,tr.y); c.lineTo(br.x,br.y); c.lineTo(bl.x,bl.y); c.closePath(); c.fill();
+    // thin geometric lattice: dead when sealed, indexing when open
+    const n=7;
+    for(let k=0;k<=n;k++){
+      const t=k/n;
+      const a1={x:lerp(tl.x,tr.x,t), y:lerp(tl.y,tr.y,t)};
+      const a2={x:lerp(bl.x,br.x,t), y:lerp(bl.y,br.y,t)};
+      const pulse = open ? 0.12+0.22*Math.max(0,Math.sin(G.t*1.6 - t*3.1)) : 0.06;
+      c.strokeStyle=`rgba(224,145,58,${pulse})`; c.lineWidth=1;
+      c.beginPath(); c.moveTo(a1.x,a1.y); c.lineTo(a2.x,a2.y); c.stroke();
+    }
+    for(let k=1;k<5;k++){
+      const t=k/5;
+      const a1={x:lerp(tl.x,bl.x,t), y:lerp(tl.y,bl.y,t)};
+      const a2={x:lerp(tr.x,br.x,t), y:lerp(tr.y,br.y,t)};
+      c.strokeStyle=`rgba(224,145,58,${open?0.16:0.05})`; c.lineWidth=1;
+      c.beginPath(); c.moveTo(a1.x,a1.y); c.lineTo(a2.x,a2.y); c.stroke();
+    }
+    // keystone sigil
+    const ks=toScreen(x,y,5.25);
+    c.strokeStyle=`rgba(224,145,58,${open?0.8:0.22})`; c.lineWidth=1.2;
+    c.beginPath(); c.moveTo(ks.x,ks.y-16); c.quadraticCurveTo(ks.x+7,ks.y-8,ks.x,ks.y-1);
+    c.quadraticCurveTo(ks.x-7,ks.y-8,ks.x,ks.y-16); c.stroke();
+    return;
+  }
+}
+
+/* ------------------------------------------------------------ entities */
+function bodyShape(c, sx, sy, h, w, jag){
+  c.beginPath();
+  if(jag){
+    c.moveTo(sx-w, sy);
+    c.lineTo(sx-w*1.35, sy-h*0.52);
+    c.lineTo(sx-w*0.72, sy-h*0.60);
+    c.lineTo(sx-w*1.05, sy-h*0.80);
+    c.lineTo(sx-w*0.34, sy-h*0.92);
+    c.lineTo(sx, sy-h);
+    c.lineTo(sx+w*0.34, sy-h*0.92);
+    c.lineTo(sx+w*1.05, sy-h*0.80);
+    c.lineTo(sx+w*0.72, sy-h*0.60);
+    c.lineTo(sx+w*1.35, sy-h*0.52);
+    c.lineTo(sx+w, sy);
+  } else {
+    c.moveTo(sx-w, sy);
+    c.lineTo(sx-w*1.12, sy-h*0.55);
+    c.lineTo(sx-w*0.62, sy-h*0.80);
+    c.lineTo(sx-w*0.34, sy-h*0.95);
+    c.lineTo(sx, sy-h);
+    c.lineTo(sx+w*0.34, sy-h*0.95);
+    c.lineTo(sx+w*0.62, sy-h*0.80);
+    c.lineTo(sx+w*1.12, sy-h*0.55);
+    c.lineTo(sx+w, sy);
+  }
+  c.closePath();
+}
+function groundShadow(c,wx,wy,rx){
+  const s=toScreen(wx,wy,groundZ(wx,wy));
+  c.fillStyle='rgba(0,0,0,0.5)';
+  c.beginPath(); c.ellipse(s.x,s.y,rx,rx*0.5,0,0,6.283); c.fill();
+}
+function groundZ(wx,wy){
+  const t=tileAt(wx|0,wy|0);
+  return (t===T_DAIS)? level.h[idx(wx|0,wy|0)] : 0;
+}
+function litAt(wx,wy){
+  const x=clamp(wx|0,0,GW-1), y=clamp(wy|0,0,GH-1);
+  return { l:level.lit[idx(x,y)], w:level.warm[idx(x,y)] };
+}
+
+function drawPlayer(c,p){
+  const C=G.cls;
+  const z=groundZ(p.x,p.y);
+  {  // the Observer's mark — thin, geometric, never a glow
+    const gs=toScreen(p.x,p.y,z+0.02);
+    c.strokeStyle='rgba(224,145,58,0.34)'; c.lineWidth=1;
+    c.beginPath(); c.ellipse(gs.x,gs.y,23,11.5,0,0,6.283); c.stroke();
+    c.strokeStyle='rgba(224,145,58,0.16)';
+    for(let k=0;k<4;k++){ const a=k/4*6.283 + Math.PI/4;
+      c.beginPath();
+      c.moveTo(gs.x+Math.cos(a)*23, gs.y+Math.sin(a)*11.5);
+      c.lineTo(gs.x+Math.cos(a)*30, gs.y+Math.sin(a)*15); c.stroke(); }
+  }
+  groundShadow(c,p.x,p.y,15);
+  const s=toScreen(p.x,p.y,z);
+  const bob = Math.sin((p.walk||0))*1.4;
+  const sx=s.x, sy=s.y+bob;
+  const H=54, W=15;
+  const {l,w}=litAt(p.x,p.y);
+
+  // body silhouette
+  bodyShape(c,sx,sy,H,W,false);
+  const g=c.createLinearGradient(sx,sy-H,sx,sy);
+  g.addColorStop(0, `rgb(${(26+w*22)|0},${(24+w*12)|0},${28})`);
+  g.addColorStop(1, '#0a0b0e');
+  c.fillStyle=g; c.fill();
+
+  // full contour first, so the Observer separates from the horde in any light
+  c.strokeStyle=`rgba(224,145,58,${0.30+w*0.22})`; c.lineWidth=1.15;
+  bodyShape(c,sx,sy,H,W,false); c.stroke();
+  // then a brighter rim on the lit shoulder
+  c.strokeStyle=`rgba(244,205,132,${0.45+w*0.40})`; c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(sx+W*1.12, sy-H*0.55); c.lineTo(sx+W*0.34,sy-H*0.95); c.lineTo(sx,sy-H); c.stroke();
+
+  // class marks
+  if(C.id==='ordo'){
+    c.fillStyle='#15161b';
+    c.beginPath(); c.moveTo(sx-W*1.3,sy-H*0.62); c.lineTo(sx-W*0.3,sy-H*0.74);
+    c.lineTo(sx-W*0.4,sy-H*0.55); c.lineTo(sx-W*1.35,sy-H*0.46); c.closePath(); c.fill();
+    c.beginPath(); c.moveTo(sx+W*1.3,sy-H*0.62); c.lineTo(sx+W*0.3,sy-H*0.74);
+    c.lineTo(sx+W*0.4,sy-H*0.55); c.lineTo(sx+W*1.35,sy-H*0.46); c.closePath(); c.fill();
+    // black-flame sigil
+    c.strokeStyle='rgba(224,145,58,0.85)'; c.lineWidth=1.1;
+    c.beginPath(); c.moveTo(sx,sy-H*0.60); c.quadraticCurveTo(sx+4,sy-H*0.50,sx,sy-H*0.40);
+    c.quadraticCurveTo(sx-4,sy-H*0.50,sx,sy-H*0.60); c.stroke();
+  } else if(C.id==='ignivarum'){
+    // horned helm
+    c.strokeStyle='rgba(217,114,44,0.8)'; c.lineWidth=1.2;
+    c.beginPath(); c.moveTo(sx-5,sy-H*0.97); c.lineTo(sx-9,sy-H*1.10);
+    c.moveTo(sx+5,sy-H*0.97); c.lineTo(sx+9,sy-H*1.10); c.stroke();
+    // censer on a chain
+    const ca=p.face;
+    const cxp=sx+Math.cos(ca)*9*1.0 + 10, cyp=sy-H*0.5 + Math.sin(G.t*3)*2;
+    c.strokeStyle='rgba(120,110,96,0.6)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(sx+W*0.7,sy-H*0.66); c.lineTo(cxp,cyp); c.stroke();
+    c.fillStyle='#1d1a17'; c.beginPath(); c.arc(cxp,cyp,3.6,0,6.283); c.fill();
+    c.strokeStyle='rgba(240,169,94,0.7)'; c.beginPath(); c.arc(cxp,cyp,3.6,0,6.283); c.stroke();
+  } else {
+    // tall hood + flat geometric halo (a ring, not a glow)
+    c.fillStyle='#101116';
+    c.beginPath(); c.moveTo(sx,sy-H*1.14); c.lineTo(sx+W*0.5,sy-H*0.86);
+    c.lineTo(sx-W*0.5,sy-H*0.86); c.closePath(); c.fill();
+    c.strokeStyle='rgba(232,210,154,0.5)'; c.lineWidth=1;
+    c.beginPath(); c.ellipse(sx,sy-H*1.12,11,3.6,0,0,6.283); c.stroke();
+    c.strokeStyle='rgba(232,210,154,0.18)';
+    c.beginPath(); c.ellipse(sx,sy-H*1.12,15,4.8,0,0,6.283); c.stroke();
+  }
+  // eye-slit ember
+  c.fillStyle='rgba(244,205,132,0.85)';
+  c.fillRect(sx-2.5, sy-H*0.90, 5, 1.4);
+
+  // buff tells (thin geometry, no aura)
+  if(p.buffs.dr){
+    c.strokeStyle='rgba(224,145,58,0.45)'; c.lineWidth=1;
+    for(let k=0;k<6;k++){ const a=k/6*6.283 + G.t*0.6;
+      c.beginPath(); c.moveTo(sx+Math.cos(a)*16, sy-20+Math.sin(a)*8);
+      c.lineTo(sx+Math.cos(a)*21, sy-20+Math.sin(a)*10.5); c.stroke(); }
+  }
+  if(p.buffs.haste){
+    c.strokeStyle='rgba(240,169,94,0.30)'; c.lineWidth=1;
+    for(let k=1;k<=3;k++){
+      const o=k*6*Math.cos(p.face+Math.PI), o2=k*3*Math.sin(p.face+Math.PI);
+      bodyShape(c,sx+o,sy+o2*0.5,H,W,false); c.stroke(); }
+  }
+  // corruption showing on the body itself
+  if(p.corr>35){
+    const a=(p.corr-35)/65*0.5;
+    c.strokeStyle=`rgba(154,111,208,${a})`; c.lineWidth=1;
+    for(let k=0;k<3;k++){
+      const yy=sy-H*(0.30+k*0.22);
+      c.beginPath(); c.moveTo(sx-W*1.1, yy+Math.sin(G.t*2+k)*1.5);
+      c.lineTo(sx+W*1.1, yy-Math.sin(G.t*2+k)*1.5); c.stroke(); }
+  }
+  // melee swing arc
+  if(p.swing>0 && !C.ranged){
+    const t=p.swing/0.28;
+    c.strokeStyle=`rgba(244,205,132,${0.7*(1-t)})`; c.lineWidth=1.6;
+    const r=(C.range+0.3)*TW/2*0.8;
+    c.beginPath();
+    c.ellipse(sx, sy-16, r, r*0.5, 0, p.face-1.0+t*0.7, p.face+0.5+t*0.7);
+    c.stroke();
+  }
+}
+function drawDecoy(c,d){
+  const s=toScreen(d.x,d.y,groundZ(d.x,d.y));
+  const H=54,W=15;
+  const flick = 0.45 + Math.sin(G.t*9)*0.08;
+  c.strokeStyle=`rgba(224,145,58,${flick})`; c.lineWidth=1.2;
+  c.setLineDash([3,3]); bodyShape(c,s.x,s.y,H,W,false); c.stroke(); c.setLineDash([]);
+  c.strokeStyle='rgba(224,145,58,0.14)';
+  c.beginPath(); c.ellipse(s.x,s.y,20,10,0,0,6.283); c.stroke();
+  // hp
+  const w=34, hp=clamp(d.hp/d.hpMax,0,1);
+  c.fillStyle='rgba(6,7,10,0.8)'; c.fillRect(s.x-w/2, s.y-H-14, w, 3);
+  c.fillStyle='rgba(224,145,58,0.6)'; c.fillRect(s.x-w/2, s.y-H-14, w*hp, 3);
+}
+function drawFoe(c,f){
+  const def=f.def;
+  const s=toScreen(f.x,f.y,groundZ(f.x,f.y));
+  if(f.ing>0){
+    // ingress: a seam opening, thin geometry
+    const t=clamp(1-f.ing/0.55,0,1);
+    c.strokeStyle=`rgba(154,111,208,${0.7*(1-Math.abs(t-0.5)*2)+0.2})`; c.lineWidth=1.2;
+    c.beginPath(); c.ellipse(s.x,s.y,30*t,15*t,0,0,6.283); c.stroke();
+    c.beginPath(); c.moveTo(s.x, s.y-52*t); c.lineTo(s.x, s.y+4); c.stroke();
+    return;
+  }
+  if(f.dead){
+    const t=f.deadT/0.9;
+    c.save(); c.globalAlpha=1-t;
+    c.strokeStyle='rgba(154,111,208,0.5)'; c.lineWidth=1;
+    bodyShape(c,s.x,s.y+t*6,def.h*(1-t*0.55),def.w,true); c.stroke();
+    c.restore(); return;
+  }
+  groundShadow(c,f.x,f.y, def.w*0.85);
+  const bob=Math.sin(f.bob)*1.2;
+  const sx=s.x, sy=s.y+bob;
+  const H=def.h, W=def.w;
+  bodyShape(c,sx,sy,H,W,true);
+  const g=c.createLinearGradient(sx,sy-H,sx,sy);
+  g.addColorStop(0,'#16121d'); g.addColorStop(1,'#08070c');
+  c.fillStyle=g; c.fill();
+  c.strokeStyle= f.flash>0 ? 'rgba(230,220,240,0.9)' : 'rgba(154,111,208,0.42)';
+  c.lineWidth= f.flash>0?1.6:1.1;
+  bodyShape(c,sx,sy,H,W,true); c.stroke();
+
+  if(f.kind==='chanter'){
+    // ragged standard + a slow rotating geometric mark
+    c.strokeStyle='rgba(154,111,208,0.45)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(sx+W*0.9, sy-H*1.25); c.lineTo(sx+W*0.9, sy-H*0.2); c.stroke();
+    c.fillStyle='rgba(74,47,107,0.5)';
+    c.beginPath(); c.moveTo(sx+W*0.9,sy-H*1.25); c.lineTo(sx+W*2.1,sy-H*1.12);
+    c.lineTo(sx+W*0.9,sy-H*0.92); c.closePath(); c.fill();
+    const a=G.t*0.8;
+    c.strokeStyle='rgba(195,162,236,0.35)';
+    c.beginPath();
+    for(let k=0;k<3;k++){ const th=a+k*2.094;
+      c.moveTo(sx+Math.cos(th)*10, sy-H*1.02+Math.sin(th)*4);
+      c.lineTo(sx+Math.cos(th+2.094)*10, sy-H*1.02+Math.sin(th+2.094)*4); }
+    c.stroke();
+  } else if(f.kind==='mauler'){
+    c.fillStyle='#12101a';
+    c.beginPath(); c.moveTo(sx-W*1.5,sy-H*0.7); c.lineTo(sx-W*0.4,sy-H*0.82);
+    c.lineTo(sx-W*0.5,sy-H*0.58); c.closePath(); c.fill();
+    c.strokeStyle='rgba(154,111,208,0.3)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(sx+W*0.8,sy-H*0.72); c.lineTo(sx+W*2.0,sy-H*0.25); c.stroke();
+  }
+  // two ember eyes
+  c.fillStyle='rgba(195,162,236,0.85)';
+  c.fillRect(sx-3.4, sy-H*0.90, 2.2, 1.4);
+  c.fillRect(sx+1.2, sy-H*0.90, 2.2, 1.4);
+
+  // windup telegraph — a thin contracting bracket, readable and dodgeable
+  if(f.wind>0){
+    const t=1 - f.wind/def.wind;
+    c.strokeStyle=`rgba(195,162,236,${0.35+t*0.45})`; c.lineWidth=1.2;
+    const r=26-t*12;
+    c.beginPath(); c.ellipse(sx,sy,r,r*0.5,0,0,6.283); c.stroke();
+    if(!def.caster){
+      const a=f.face, R=(def.rng+0.3)*TW/2*0.8;
+      c.strokeStyle=`rgba(195,162,236,${0.20+t*0.35})`;
+      c.beginPath(); c.ellipse(sx,sy-12,R,R*0.5,0,a-0.7,a+0.7); c.stroke();
+    }
+  }
+  // hp bar when hurt / targeted
+  if(f.showBar>0 || G.p.target===f || f.hp<f.hpMax){
+    const w=Math.max(26,W*2.6), hp=clamp(f.hp/f.hpMax,0,1);
+    c.fillStyle='rgba(6,7,10,0.85)'; c.fillRect(sx-w/2, sy-H-12, w, 3.5);
+    c.fillStyle='rgba(168,52,47,0.9)'; c.fillRect(sx-w/2, sy-H-12, w*hp, 3.5);
+    c.strokeStyle='rgba(60,50,70,0.7)'; c.lineWidth=1;
+    c.strokeRect(sx-w/2+0.5, sy-H-12+0.5, w-1, 2.5);
+  }
+  // target bracket
+  if(G.p.target===f){
+    c.strokeStyle='rgba(224,145,58,0.75)'; c.lineWidth=1.2;
+    const r=22;
+    for(const [ax,ay] of [[-1,-1],[1,-1],[1,1],[-1,1]]){
+      c.beginPath();
+      c.moveTo(sx+ax*r*0.62, sy+ay*r*0.31 - ay*5);
+      c.lineTo(sx+ax*r, sy+ay*r*0.5);
+      c.lineTo(sx+ax*r*0.62 + ax*0, sy+ay*r*0.5 + ay*3);
+      c.stroke();
+    }
+  }
+}
+function drawProj(c,pr){
+  const s=toScreen(pr.x,pr.y,0.85);
+  const dx=Math.cos(pr.a), dy=Math.sin(pr.a);
+  const a=toScreen(pr.x-dx*0.45, pr.y-dy*0.45, 0.85);
+  c.strokeStyle='rgba(232,210,154,0.85)'; c.lineWidth=1.6;
+  c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(s.x,s.y); c.stroke();
+  c.strokeStyle='rgba(232,210,154,0.22)'; c.lineWidth=1;
+  const b=toScreen(pr.x-dx*1.1, pr.y-dy*1.1, 0.85);
+  c.beginPath(); c.moveTo(b.x,b.y); c.lineTo(a.x,a.y); c.stroke();
+}
+function drawChantUp(c,e){
+  const f=e.foe; if(!f||f.dead) return;
+  const s=toScreen(f.x,f.y,0);
+  const t=clamp(e.t/e.dur,0,1);
+  c.strokeStyle=`rgba(154,111,208,${0.25+t*0.4})`; c.lineWidth=1;
+  const r=8+t*16;
+  c.beginPath();
+  for(let k=0;k<6;k++){
+    const th=k/6*6.283 + G.t*0.5;
+    const px=s.x+Math.cos(th)*r, py=s.y-f.def.h*1.05+Math.sin(th)*r*0.5;
+    k? c.lineTo(px,py) : c.moveTo(px,py);
+  }
+  c.closePath(); c.stroke();
+}
+
+/* ------------------------------------------------------------ fx layers */
+function drawGroundFx(c){
+  // hazards
+  for(const h of G.hazards){
+    const pre = h.t<h.warn;
+    const t = pre ? h.t/h.warn : (h.t-h.warn)/0.65;
+    const s=toScreen(h.x,h.y,0.02);
+    const rx=h.r*TW/2, ry=h.r*TH/2;
+    if(pre){
+      c.strokeStyle = h.kind==='chant' ? `rgba(154,111,208,${0.30+t*0.45})` : `rgba(154,111,208,${0.22+t*0.4})`;
+      c.lineWidth=1.2;
+      c.beginPath(); c.ellipse(s.x,s.y,rx,ry,0,0,6.283); c.stroke();
+      c.beginPath(); c.ellipse(s.x,s.y,rx*(1-t*0.75),ry*(1-t*0.75),0,0,6.283); c.stroke();
+      // radial ticks — geometry, not sparks
+      c.strokeStyle=`rgba(154,111,208,${0.18+t*0.25})`;
+      for(let k=0;k<8;k++){ const a=k/8*6.283 + (h.kind==='rupture'?0.4:0);
+        c.beginPath(); c.moveTo(s.x+Math.cos(a)*rx*0.55, s.y+Math.sin(a)*ry*0.55);
+        c.lineTo(s.x+Math.cos(a)*rx, s.y+Math.sin(a)*ry); c.stroke(); }
+    } else {
+      c.fillStyle=`rgba(74,47,107,${0.34*(1-t)})`;
+      c.beginPath(); c.ellipse(s.x,s.y,rx,ry,0,0,6.283); c.fill();
+      c.strokeStyle=`rgba(195,162,236,${0.5*(1-t)})`; c.lineWidth=1.4;
+      c.beginPath(); c.ellipse(s.x,s.y,rx*(1+t*0.3),ry*(1+t*0.3),0,0,6.283); c.stroke();
+    }
+  }
+  // extraction gate ring
+  if(G.gateOpen){
+    const s=toScreen(9.5,3.0,0.45);
+    const pu=(Math.sin(G.t*1.6)*0.5+0.5);
+    c.strokeStyle=`rgba(224,145,58,${0.28+pu*0.22})`; c.lineWidth=1.3;
+    c.beginPath(); c.ellipse(s.x,s.y,1.5*TW/2,1.5*TH/2,0,0,6.283); c.stroke();
+    if(G.gateT>0){
+      c.strokeStyle='rgba(244,205,132,0.9)'; c.lineWidth=2.4;
+      c.beginPath(); c.ellipse(s.x,s.y,1.5*TW/2,1.5*TH/2,0,-Math.PI/2,-Math.PI/2+ (G.gateT/1.6)*6.283); c.stroke();
+    }
+  }
+  // ability ground fx
+  for(const e of G.fx){
+    const t=clamp(e.t/e.dur,0,1);
+    if(e.k==='recite'){
+      const s=toScreen(e.x,e.y,0.03);
+      for(let k=0;k<2;k++){
+        const tt=clamp(t*1.25-k*0.18,0,1);
+        const r=e.r*tt;
+        c.strokeStyle=`rgba(244,205,132,${(1-tt)*0.7})`; c.lineWidth=1.4-k*0.5;
+        c.beginPath(); c.ellipse(s.x,s.y,r*TW/2,r*TH/2,0,0,6.283); c.stroke();
+      }
+      c.strokeStyle=`rgba(224,145,58,${(1-t)*0.32})`; c.lineWidth=1;
+      for(let k=0;k<10;k++){ const a=k/10*6.283+0.2;
+        c.beginPath(); c.moveTo(s.x,s.y);
+        c.lineTo(s.x+Math.cos(a)*e.r*TW/2*t, s.y+Math.sin(a)*e.r*TH/2*t); c.stroke(); }
+    }
+    if(e.k==='unwrite'){
+      const s=toScreen(e.x,e.y,0.03);
+      if(t<0.5){
+        const tt=t/0.5;
+        c.strokeStyle=`rgba(232,210,154,${0.35+tt*0.45})`; c.lineWidth=1.2;
+        const r=e.r*(1.6-tt*0.6);
+        c.beginPath();
+        for(let k=0;k<6;k++){ const a=k/6*6.283 - Math.PI/2;
+          const px=s.x+Math.cos(a)*r*TW/2, py=s.y+Math.sin(a)*r*TH/2;
+          k?c.lineTo(px,py):c.moveTo(px,py); }
+        c.closePath(); c.stroke();
+      } else {
+        const tt=(t-0.5)/0.5;
+        c.fillStyle=`rgba(10,11,15,${0.55*(1-tt)})`;
+        c.beginPath(); c.ellipse(s.x,s.y,e.r*TW/2,e.r*TH/2,0,0,6.283); c.fill();
+        c.strokeStyle=`rgba(232,210,154,${0.8*(1-tt)})`; c.lineWidth=1.6;
+        c.beginPath(); c.ellipse(s.x,s.y,e.r*TW/2*(1+tt*0.25),e.r*TH/2*(1+tt*0.25),0,0,6.283); c.stroke();
+      }
+    }
+    if(e.k==='unmake'){
+      const s=toScreen(e.x,e.y,0.03);
+      c.strokeStyle=`rgba(154,111,208,${0.55*(1-t)})`; c.lineWidth=1;
+      c.beginPath(); c.ellipse(s.x,s.y,(0.4+t*1.5)*TW/2,(0.4+t*1.5)*TH/2,0,0,6.283); c.stroke();
+    }
+    if(e.k==='ingress'||e.k==='project'||e.k==='unproject'){
+      const s=toScreen(e.x,e.y,0.03);
+      const col = e.k==='ingress' ? '154,111,208' : '224,145,58';
+      c.strokeStyle=`rgba(${col},${0.55*(1-t)})`; c.lineWidth=1;
+      c.beginPath(); c.ellipse(s.x,s.y,(1.2-t*0.6)*TW/2,(1.2-t*0.6)*TH/2,0,0,6.283); c.stroke();
+    }
+  }
+}
+function drawAirFx(c){
+  for(const e of G.fx){
+    const t=clamp(e.t/e.dur,0,1);
+    if(e.k==='shift'||e.k==='palin'){
+      const a=toScreen(e.ax,e.ay,0.7), b=toScreen(e.bx,e.by,0.7);
+      const col = e.k==='palin' ? '232,210,154' : '224,145,58';
+      // parallel thin lines: reality being re-indexed
+      for(let k=-2;k<=2;k++){
+        const o=k*3.2;
+        c.strokeStyle=`rgba(${col},${(1-t)*(0.42-Math.abs(k)*0.09)})`;
+        c.lineWidth=1;
+        c.beginPath(); c.moveTo(a.x,a.y-26+o); c.lineTo(b.x,b.y-26+o); c.stroke();
+      }
+      c.strokeStyle=`rgba(${col},${(1-t)*0.5})`; c.lineWidth=1.2;
+      c.beginPath(); c.ellipse(a.x,a.y,(0.5+t*0.9)*TW/2,(0.5+t*0.9)*TH/2,0,0,6.283); c.stroke();
+      c.beginPath(); c.ellipse(b.x,b.y,(1.2-t*0.7)*TW/2,(1.2-t*0.7)*TH/2,0,0,6.283); c.stroke();
+    }
+    if(e.k==='lance'){
+      const a=toScreen(e.ax,e.ay,0.85), b=toScreen(e.bx,e.by,0.85);
+      const w=(1-t);
+      c.strokeStyle=`rgba(244,205,132,${0.85*w})`; c.lineWidth=2.2*w+0.5;
+      c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke();
+      c.strokeStyle=`rgba(224,145,58,${0.4*w})`; c.lineWidth=1;
+      c.beginPath(); c.moveTo(a.x,a.y-5); c.lineTo(b.x,b.y-5);
+      c.moveTo(a.x,a.y+5); c.lineTo(b.x,b.y+5); c.stroke();
+    }
+    if(e.k==='foeswing'){
+      const s=toScreen(e.x,e.y,0.5);
+      c.strokeStyle=`rgba(195,162,236,${0.6*(1-t)})`; c.lineWidth=1.6;
+      const R=e.r*TW/2*0.8;
+      c.beginPath(); c.ellipse(s.x,s.y-12,R,R*0.5,0,e.a-0.9+t*0.6,e.a+0.4+t*0.6); c.stroke();
+    }
+  }
+}
+function drawNumbers(c){
+  c.textAlign='center';
+  for(const n of G.nums){
+    const t=n.t/0.95;
+    const s=toScreen(n.x,n.y,0);
+    c.globalAlpha=1-t*t;
+    c.font='600 12px "Courier New", monospace';
+    c.fillStyle=n.col;
+    c.fillText(String(n.txt), s.x+n.ox, s.y-46-t*26);
+  }
+  c.globalAlpha=1; c.textAlign='left';
+}
+function drawCursor(c){
+  const f=foeUnderCursor();
+  if(f && !f.dead){
+    const s=toScreen(f.x,f.y,0);
+    c.strokeStyle='rgba(224,145,58,0.55)'; c.lineWidth=1;
+    c.beginPath(); c.ellipse(s.x,s.y,20,10,0,0,6.283); c.stroke();
+    c.font='10px Georgia, serif'; c.fillStyle='rgba(207,199,184,0.75)'; c.textAlign='center';
+    c.fillText(f.def.label, s.x, s.y-f.def.h-20); c.textAlign='left';
+    return;
+  }
+  const tx=IN.wx|0, ty=IN.wy|0;
+  if(!isBlocked(tx,ty)){
+    const z=groundZ(tx+0.5,ty+0.5);
+    c.strokeStyle='rgba(224,145,58,0.28)'; c.lineWidth=1;
+    diamond(c,tx,ty,z,0.16); c.stroke();
+  }
+}
+
+/* -------------------------------------------------- present + depth grade */
+function present(D){
+  const amp = D.distort * (1 + G.p.corr/140);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,VW,VH);
+  if(amp < 0.06){
+    ctx.drawImage(oc, 0,0,cv.width,cv.height, 0,0,VW,VH);
+  } else {
+    // controlled band displacement: low frequency, sub-pixel-ish, no strobe
+    const BANDS=52, bh=VH/BANDS;
+    for(let i=0;i<BANDS;i++){
+      const u=i/BANDS;
+      const off = amp * Math.sin(u*Math.PI*1.7 + G.t*0.5) * Math.sin(G.t*0.29 + u*2.6);
+      const sy=i*bh, sh=bh+1;
+      ctx.drawImage(oc, 0, sy*DPR, cv.width, sh*DPR, off, sy, VW, sh);
+    }
+  }
+  // strata seams (only once reality is genuinely failing)
+  if(D.distort>=1.5){
+    const n = D.distort>=2.5 ? 3 : 2;
+    for(let i=0;i<n;i++){
+      const y = ((G.t*11 + i*VH/n) % (VH+80)) - 40;
+      ctx.fillStyle=`rgba(154,111,208,${0.05 + Math.max(0,D.distort-1.5)*0.03})`;
+      ctx.fillRect(0, y, VW, 1);
+    }
+  }
+  // wash + vignette
+  if(D.wash>0){ ctx.fillStyle=`rgba(58,34,86,${D.wash})`; ctx.fillRect(0,0,VW,VH); }
+  const cw = G.p.corr/100;
+  if(cw>0.25){ ctx.fillStyle=`rgba(74,47,107,${(cw-0.25)*0.20})`; ctx.fillRect(0,0,VW,VH); }
+  ctx.fillStyle=vign; ctx.fillRect(0,0,VW,VH);
+  // gate beckon: a faint warm bias once open
+  if(G.gateOpen){
+    ctx.fillStyle=`rgba(224,145,58,${0.018+Math.sin(G.t*1.4)*0.008})`;
+    ctx.fillRect(0,0,VW,VH);
+  }
+}
+
+/* ---------------------------------------------------------------- loop */
+let raf=null, lastT=0;
+function frame(ts){
+  raf=requestAnimationFrame(frame);
+  if(!G) return;
+  const dt = clamp((ts-lastT)/1000 || 0.016, 0, 0.05);
+  lastT=ts;
+  if(G.running) update(dt);
+  render();
+}
+
+/* --------------------------------------------------------------- screens */
+function show(id){
+  for(const s of document.querySelectorAll('.screen')) s.classList.remove('on');
+  document.getElementById('screen-game').classList.remove('on');
+  if(id==='game') document.getElementById('screen-game').classList.add('on');
+  else document.getElementById('screen-'+id).classList.add('on');
+}
+
+let chosen=null;
+function buildClassCards(){
+  const row=document.getElementById('class-row'); row.innerHTML='';
+  CLASSES.forEach((C,i)=>{
+    const d=document.createElement('div'); d.className='card'; d.dataset.i=i;
+    const pips=(v)=>{let s='';for(let k=0;k<5;k++)s+=`<div class="pip ${k<v?'f':''}"></div>`;return s;};
+    const stats=Object.entries(C.stats).map(([k,v])=>
+      `<div class="stat"><div class="stat-l">${k}</div><div class="pips">${pips(v)}</div></div>`).join('');
+    const abils=C.abilities.map(a=>
+      `<div class="ab-line"><b>${ABIL[a].name}</b> — ${ABIL[a].art}</div>`).join('');
+    d.innerHTML=`
+      <div class="card-fig">${classFigure(C)}</div>
+      <div class="card-order">${C.order}</div>
+      <div class="card-name">${C.name}</div>
+      <div class="card-role">${C.role}</div>
+      <div class="card-flavor">${C.flavor}</div>
+      ${stats}
+      <div class="card-abils">${abils}</div>`;
+    d.onclick=()=>{
+      chosen=C;
+      for(const e of row.children) e.classList.remove('sel');
+      d.classList.add('sel');
+      document.getElementById('btn-descend').disabled=false;
+    };
+    row.appendChild(d);
+  });
+}
+function classFigure(C){
+  const a=C.accent, a2=C.accent2;
+  const common = `<ellipse cx="40" cy="94" rx="19" ry="5" fill="#000" opacity=".55"/>`;
+  if(C.id==='ordo') return `<svg width="80" height="104" viewBox="0 0 80 104">${common}
+    <path d="M40 18 L52 30 L54 60 L58 66 L52 94 L28 94 L22 66 L26 60 L28 30 Z" fill="#101116" stroke="${a}" stroke-width="1"/>
+    <path d="M22 40 L34 34 L34 46 L21 50 Z" fill="#191a20" stroke="${a}" stroke-width=".7"/>
+    <path d="M58 40 L46 34 L46 46 L59 50 Z" fill="#191a20" stroke="${a}" stroke-width=".7"/>
+    <path d="M40 14 L47 22 L45 32 L35 32 L33 22 Z" fill="#15161b" stroke="${a}" stroke-width=".8"/>
+    <rect x="36" y="24" width="8" height="2" fill="${a2}"/>
+    <path d="M40 52 C45 58 46 62 40 70 C34 62 35 58 40 52 Z" fill="none" stroke="${a2}" stroke-width="1"/>
+    <path d="M64 24 L68 28 L60 92" stroke="${a}" stroke-width="1" fill="none" opacity=".7"/></svg>`;
+  if(C.id==='ignivarum') return `<svg width="80" height="104" viewBox="0 0 80 104">${common}
+    <path d="M40 20 L50 30 L52 58 L56 66 L50 94 L30 94 L24 66 L28 58 L30 30 Z" fill="#101116" stroke="${a}" stroke-width="1"/>
+    <path d="M40 12 L47 20 L45 32 L35 32 L33 20 Z" fill="#15161b" stroke="${a}" stroke-width=".8"/>
+    <path d="M34 14 L28 4 M46 14 L52 4" stroke="${a}" stroke-width="1.2" fill="none"/>
+    <rect x="36" y="24" width="8" height="2" fill="${a2}"/>
+    <path d="M52 40 L66 56" stroke="#6a6152" stroke-width="1" fill="none"/>
+    <circle cx="67" cy="60" r="6" fill="#15130f" stroke="${a2}" stroke-width="1"/>
+    <path d="M67 55 C69 58 70 60 67 64 C64 60 65 58 67 55 Z" fill="${a2}" opacity=".5"/>
+    <path d="M22 44 L14 60 L20 74" stroke="${a}" stroke-width="1" fill="none" opacity=".55"/></svg>`;
+  return `<svg width="80" height="104" viewBox="0 0 80 104">${common}
+    <ellipse cx="40" cy="14" rx="16" ry="5" fill="none" stroke="${a2}" stroke-width="1"/>
+    <ellipse cx="40" cy="14" rx="22" ry="7" fill="none" stroke="${a2}" stroke-width=".6" opacity=".45"/>
+    <path d="M40 16 L54 40 L52 62 L58 68 L50 94 L30 94 L22 68 L28 62 L26 40 Z" fill="#101116" stroke="${a}" stroke-width="1"/>
+    <path d="M40 18 L49 34 L31 34 Z" fill="#15161b" stroke="${a}" stroke-width=".7"/>
+    <rect x="36" y="30" width="8" height="2" fill="${a2}"/>
+    <path d="M40 46 L48 54 L40 62 L32 54 Z" fill="none" stroke="${a2}" stroke-width=".9"/>
+    <path d="M40 40 L40 76 M28 54 L52 54" stroke="${a}" stroke-width=".5" opacity=".4"/>
+    <path d="M14 44 L14 84 M66 44 L66 84" stroke="${a}" stroke-width=".7" opacity=".35"/></svg>`;
+}
+
+function startGame(){
+  G = newGame(chosen);
+  resize();
+  buildHud();
+  updateHud();
+  show('game');
+  log('The Vigil begins. Depth I holds — for now.','f');
+  log('Ghurazi ingress detected at the nave mouth.','s');
+  spawnFoe('raider',{x:9.5,y:33.0});
+  spawnFoe('raider',{x:7.5,y:33.5});
+  spawnFoe('raider',{x:11.5,y:33.5});
+  IN.keys={}; IN.down=false;
+  lastT=performance.now();
+  if(!raf) raf=requestAnimationFrame(frame);
+}
+
+function endGame(kind){
+  if(!G.running) return;
+  G.running=false; G.over=kind;
+  const D=DEPTHS[G.depth];
+  const t=document.getElementById('end-title');
+  const v=document.getElementById('end-verdict');
+  const b=document.getElementById('end-body');
+  if(kind==='extract'){
+    v.textContent='Vigil Concluded';
+    t.textContent='Extraction';
+    b.innerHTML='The nave is quiet. The Ghurazi chant has no mouth left to carry it, and the Vigil Gate '+
+      'closes behind you with the sound of a decision being made.<br><br>'+
+      'The Aeonic Wound is not smaller. But this stratum, at least, remembers who walked it — '+
+      'and remembering is the only weapon the Flame has ever had.';
+  } else if(kind==='fall'){
+    v.textContent='Vigil Broken';
+    t.textContent='The Flame Forgets';
+    b.innerHTML='Your body fails in the aisle where the light does not reach. '+
+      'The Ghurazi do not stop to look; there is nothing here they wanted, only something that was in the way.'+
+      '<br><br>The Ordo will strike your name from the Vigil roll. They will not remember striking it.';
+  } else {
+    v.textContent='Vigil Dissolved';
+    t.textContent='Ruptura Originii';
+    b.innerHTML='You went too deep, and the deep answered in your own voice. '+
+      'Somewhere between the fourth stratum and the floor, the question of which one of you was walking '+
+      'stopped having an answer.<br><br>Identity degradation complete. The body continues. The Vigil does not.';
+  }
+  const stats=[
+    ['Depth Reached', D.n],
+    ['Ghurazi Unmade', G.kills],
+    ['Corruption', Math.floor(G.p.corr)+'%'],
+    ['Time Held', Math.floor(G.elapsed/60)+':'+String(Math.floor(G.elapsed%60)).padStart(2,'0')]
+  ];
+  document.getElementById('end-stats').innerHTML =
+    stats.map(([k,val])=>`<div class="es"><b>${val}</b><i>${k}</i></div>`).join('');
+  setTimeout(()=>show('end'), 900);
+}
+
+/* ------------------------------------------------------------------ boot */
+document.getElementById('btn-begin').onclick=()=>{ show('class'); };
+document.getElementById('btn-back').onclick=()=>{ show('title'); };
+document.getElementById('btn-descend').onclick=()=>{ if(chosen) startGame(); };
+document.getElementById('btn-again').onclick=()=>{ show('class'); };
+document.getElementById('btn-title').onclick=()=>{ show('title'); };
+window.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(document.getElementById('screen-title').classList.contains('on')) show('class');
+    else if(document.getElementById('screen-class').classList.contains('on') && chosen) startGame();
+  }
+});
+
+buildLevel();
+buildClassCards();
+resize();
+window.__AET = { get G(){return G;}, CLASSES, startGame,
+  choose:(i)=>{ chosen=CLASSES[i]; }, castAbility, IN, DEPTHS, level, findPath };
+</script>
+</body>
+</html>
