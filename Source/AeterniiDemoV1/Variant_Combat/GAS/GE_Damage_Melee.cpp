@@ -3,6 +3,7 @@
 #include "GE_Damage_Melee.h"
 #include "CombatAttributeSet.h"
 #include "CombatGameplayTags.h"
+#include "GameplayEffectTypes.h"
 
 UGE_Damage_Melee::UGE_Damage_Melee()
 {

@@ -126,6 +126,7 @@ struct FStateTreeWaitWhileAttackingInstanceData
 	UPROPERTY(EditAnywhere, Category = Parameter, meta = (ClampMin = 0.1, Units = "s"))
 	float TimeoutSeconds = 5.0f;
 
+	UPROPERTY()
 	float ElapsedSeconds = 0.0f;
 };
 
@@ -171,6 +172,7 @@ struct FStateTreeMoveCloserInstanceData
 	UPROPERTY(EditAnywhere, Category = Parameter, meta = (ClampMin = 0.05, Units = "s"))
 	float Duration = 0.75f;
 
+	UPROPERTY()
 	float ElapsedSeconds = 0.0f;
 };
 
