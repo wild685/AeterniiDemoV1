@@ -17,7 +17,9 @@ public class AeterniiDemoV1 : ModuleRules
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
+			"GameplayAbilities",
 			"GameplayTags",
+			"GameplayTasks",
 			"UMG",
 			"Slate"
 		});
@@ -31,6 +33,7 @@ public class AeterniiDemoV1 : ModuleRules
 			"AeterniiDemoV1/Variant_Combat",
 			"AeterniiDemoV1/Variant_Combat/AI",
 			"AeterniiDemoV1/Variant_Combat/Animation",
+			"AeterniiDemoV1/Variant_Combat/GAS",
 			"AeterniiDemoV1/Variant_Combat/Gameplay",
 			"AeterniiDemoV1/Variant_Combat/Interfaces",
 			"AeterniiDemoV1/Variant_Combat/UI",

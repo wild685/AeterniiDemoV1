@@ -4,6 +4,7 @@
 #include "CombatCharacter.h"
 
 DEFINE_LOG_CATEGORY(LogCombatCharacter);
+#include "AbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
   #include "Components/WidgetComponent.h"
   #include "GameFramework/CharacterMovementComponent.h"
@@ -13,10 +14,15 @@ DEFINE_LOG_CATEGORY(LogCombatCharacter);
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "CombatAbilitySystemComponent.h"
+#include "CombatAttributeSet.h"
+#include "CombatGameplayTags.h"
 #include "CombatLifeBar.h"
 #include "CombatEnemy.h"
 #include "Engine/DamageEvents.h"
 #include "EngineUtils.h"
+#include "Abilities/GameplayAbility.h"
+#include "GA_Dodge.h"
 #include "TimerManager.h"
 #include "Engine/LocalPlayer.h"
 #include "CombatPlayerController.h"
@@ -71,6 +77,12 @@ ACombatCharacter::ACombatCharacter()
 	LifeBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("LifeBar"));
 	LifeBar->SetupAttachment(RootComponent);
 
+	AbilitySystemComponent = CreateDefaultSubobject<UCombatAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+
+	AttributeSet = CreateDefaultSubobject<UCombatAttributeSet>(TEXT("AttributeSet"));
+
 	// set the player tag
 	Tags.Add(FName("Player"));
 }
@@ -114,6 +126,24 @@ void ACombatCharacter::ToggleCamera()
 {
 	// call the BP hook
 	BP_ToggleCamera();
+}
+
+void ACombatCharacter::DodgePressed()
+{
+	DoDodge();
+}
+
+void ACombatCharacter::DoDodge()
+{
+	if (!AbilitySystemComponent)
+	{
+		return;
+	}
+
+	if (!AbilitySystemComponent->TryActivateAbilityByClass(UGA_Dodge::StaticClass()))
+	{
+		UE_LOG(LogCombatCharacter, Verbose, TEXT("Dodge activate failed (already dodging or GA_Dodge not granted)."));
+	}
 }
 
 void ACombatCharacter::ToggleLockOn()
@@ -362,6 +392,12 @@ void ACombatCharacter::ResetHP()
 
 	// update the life bar
 	LifeBarWidget->SetLifePercentage(1.0f);
+
+	if (AttributeSet)
+	{
+		AttributeSet->InitMaxHealth(MaxHP);
+		AttributeSet->InitHealth(MaxHP);
+	}
 }
 
 void ACombatCharacter::ComboAttack()
@@ -576,6 +612,12 @@ void ACombatCharacter::NotifyEnemiesOfIncomingAttack()
 
 void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVector& DamageLocation, const FVector& DamageImpulse)
 {
+	if (HasDodgeIFrames())
+	{
+		UE_LOG(LogCombatCharacter, Verbose, TEXT("Damage skipped (Status.Dodge.IFrames)."));
+		return;
+	}
+
 	// pass the damage event to the actor
 	FDamageEvent DamageEvent;
 	const float ActualDamage = TakeDamage(Damage, DamageEvent, nullptr, DamageCauser);
@@ -601,6 +643,12 @@ void ACombatCharacter::ApplyDamage(float Damage, AActor* DamageCauser, const FVe
 
 void ACombatCharacter::HandleDeath()
 {
+	if (bIsDead)
+	{
+		return;
+	}
+
+	bIsDead = true;
 	LockedTarget = nullptr;
 
 	// disable movement while we're dead
@@ -638,7 +686,12 @@ void ACombatCharacter::RespawnCharacter()
 float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	// only process damage if the character is still alive
-	if (CurrentHP <= 0.0f)
+	if (CurrentHP <= 0.0f || bIsDead)
+	{
+		return 0.0f;
+	}
+
+	if (HasDodgeIFrames())
 	{
 		return 0.0f;
 	}
@@ -660,6 +713,12 @@ float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dama
 		// enable partial ragdoll physics, but keep the pelvis vertical
 		GetMesh()->SetPhysicsBlendWeight(0.5f);
 		GetMesh()->SetBodySimulatePhysics(PelvisBoneName, false);
+	}
+
+	if (AttributeSet)
+	{
+		AttributeSet->SetHealth(CurrentHP);
+		AttributeSet->SetMaxHealth(MaxHP);
 	}
 
 	// return the received damage amount
@@ -697,6 +756,8 @@ void ACombatCharacter::BeginPlay()
 
 	// reset HP to maximum
 	ResetHP();
+
+	InitializeAbilitySystem();
 }
 
 void ACombatCharacter::Tick(float DeltaSeconds)
@@ -750,6 +811,11 @@ void ACombatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 		// Magic Cast
 		EnhancedInputComponent->BindAction(MagicCastAction, ETriggerEvent::Started, this, &ACombatCharacter::CastMagic);
+
+		if (DodgeAction)
+		{
+			EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &ACombatCharacter::DodgePressed);
+		}
   	}
 }
 
@@ -762,5 +828,87 @@ void ACombatCharacter::NotifyControllerChanged()
 	{
 		PC->SetRespawnTransform(GetActorTransform());
 	}
+}
+
+void ACombatCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	InitializeAbilitySystem();
+}
+
+void ACombatCharacter::OnRep_Controller()
+{
+	Super::OnRep_Controller();
+	InitializeAbilitySystem();
+}
+
+void ACombatCharacter::InitializeAbilitySystem()
+{
+	if (!AbilitySystemComponent || !AttributeSet)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+	if (!bHealthDelegateBound)
+	{
+		AttributeSet->OnHealthChanged.AddDynamic(this, &ACombatCharacter::HandleGASHealthChanged);
+		bHealthDelegateBound = true;
+	}
+
+	AttributeSet->InitMaxHealth(MaxHP);
+	AttributeSet->InitHealth(CurrentHP > 0.0f ? CurrentHP : MaxHP);
+	AttributeSet->InitMaxStamina(100.0f);
+	AttributeSet->InitStamina(100.0f);
+
+	GrantDefaultAbilities();
+}
+
+void ACombatCharacter::GrantDefaultAbilities()
+{
+	if (bDefaultAbilitiesGranted || !AbilitySystemComponent)
+	{
+		return;
+	}
+
+	TArray<TSubclassOf<UGameplayAbility>> ToGrant = DefaultAbilities;
+	if (ToGrant.Num() == 0)
+	{
+		ToGrant.Add(UGA_Dodge::StaticClass());
+	}
+
+	for (const TSubclassOf<UGameplayAbility>& AbilityClass : ToGrant)
+	{
+		AbilitySystemComponent->GrantAbilityIfMissing(AbilityClass);
+	}
+
+	bDefaultAbilitiesGranted = true;
+}
+
+void ACombatCharacter::HandleGASHealthChanged(float NewHealth, float NewMaxHealth)
+{
+	CurrentHP = NewHealth;
+	MaxHP = NewMaxHealth;
+
+	if (LifeBarWidget && NewMaxHealth > 0.0f)
+	{
+		LifeBarWidget->SetLifePercentage(NewHealth / NewMaxHealth);
+	}
+
+	if (NewHealth <= 0.0f)
+	{
+		HandleDeath();
+	}
+}
+
+UAbilitySystemComponent* ACombatCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+bool ACombatCharacter::HasDodgeIFrames() const
+{
+	return AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(TAG_Status_Dodge_IFrames);
 }
 
