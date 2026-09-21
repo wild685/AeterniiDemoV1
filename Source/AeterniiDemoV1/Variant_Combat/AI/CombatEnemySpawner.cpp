@@ -49,6 +49,11 @@ void ACombatEnemySpawner::EndPlay(EEndPlayReason::Type EndPlayReason)
 	GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
 }
 
+FTransform ACombatEnemySpawner::GetSpawnCapsuleTransform() const
+{
+	return SpawnCapsule ? SpawnCapsule->GetComponentTransform() : GetActorTransform();
+}
+
 void ACombatEnemySpawner::SpawnEnemy()
 {
 	// ensure the enemy class is valid
@@ -58,7 +63,7 @@ void ACombatEnemySpawner::SpawnEnemy()
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-		ACombatEnemy* SpawnedEnemy = GetWorld()->SpawnActor<ACombatEnemy>(EnemyClass, SpawnCapsule->GetComponentTransform(), SpawnParams);
+		ACombatEnemy* SpawnedEnemy = GetWorld()->SpawnActor<ACombatEnemy>(EnemyClass, GetSpawnCapsuleTransform(), SpawnParams);
 
 		// was the enemy successfully created?
 		if (SpawnedEnemy)
