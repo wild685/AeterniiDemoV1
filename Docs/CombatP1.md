@@ -1,6 +1,6 @@
 # Combat P1 — GAS-lite boss kit
 
-C++ scaffolding for readable boss combat. This does **not** ship art, montage binaries, or a cooked State Tree asset. Create those in the editor (or Aura) and assign them to the new C++ types.
+C++ scaffolding for readable boss combat. This does **not** ship art, montage binaries, or a cooked State Tree asset. Author those in the Unreal Editor (Persona for montage sections/notifies, Control Rig if you need new animation, State Tree editor for `ST_BossCombat`) and assign them to the new C++ types. Use Cursor for C++ changes.
 
 Module: `AeterniiDemoV1` (UE 5.8). Extends the existing Combat variant — `ACombatBoss` is an `ACombatEnemy`, `ACombatBossAIController` is an `ACombatAIController`. Regular combo enemies are unchanged.
 
@@ -64,7 +64,9 @@ Suggested Content paths (create if missing):
 /Game/Variant_Combat/Blueprints/AIC_Boss           (parent: CombatBossAIController)
 ```
 
-### 1. Montages (Aura or Persona)
+### 1. Montages (Persona)
+
+Create empty Anim Montage assets in the Content Browser, then edit sections and notifies in Persona. If you need new source animation, author it with Control Rig (or any existing skeleton animation) and slot it into the montage.
 
 For each boss attack montage:
 
