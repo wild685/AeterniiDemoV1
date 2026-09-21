@@ -92,14 +92,27 @@ struct FPlayerClassAbilitySlot
 DECLARE_LOG_CATEGORY_EXTERN(LogPlayerClassData, Log, All);
 
 /**
- *  Primary data asset for a playable player class (Ordo / Ignivarum / Luminarch).
+ *  Internal combat archetype. Not a player-facing class title — HUD should
+ *  show DisplayName only (Igni Orthodoxia / Genitorii Gothica / Luminarch Collegium).
+ */
+UENUM(BlueprintType)
+enum class EPlayerClassArchetype : uint8
+{
+	Bulwark UMETA(DisplayName = "Bulwark"),
+	Aggressor UMETA(DisplayName = "Aggressor"),
+	NoeticRanged UMETA(DisplayName = "Noetic Ranged")
+};
+
+/**
+ *  Primary data asset for a playable player class (ClassId ordo / ignivarum / luminarch).
  *
  *  Create editor instances at the Content paths in PlayerClassAsset (see
  *  Docs/integration-queue/player-classes.md). This C++ type ships without
  *  .uasset instances — call ApplyCanonDefaults after setting ClassId to
  *  fill isometric-demo numbers without baking them into BP defaults.
  *
- *  PrimaryAssetType: PlayerClass. Priya should soft-ref the three DAs by path.
+ *  PrimaryAssetType: PlayerClass. Priya should soft-ref the three DAs by path
+ *  and bind the select screen to DisplayName only.
  */
 UCLASS(BlueprintType)
 class UPlayerClassData : public UPrimaryDataAsset
@@ -116,14 +129,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Identity")
 	FName ClassId;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Identity")
-	FText OrderName;
-
+	/**
+	 *  Sole player-facing class title for the select screen:
+	 *  Igni Orthodoxia / Genitorii Gothica / Luminarch Collegium.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Identity")
 	FText DisplayName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Identity")
-	FText RoleLabel;
+	/** Combat kit: bulwark / aggressor / noetic-ranged. For code, not a HUD title. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+	EPlayerClassArchetype Archetype = EPlayerClassArchetype::Bulwark;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Identity", meta=(MultiLine=true))
 	FText FlavorText;

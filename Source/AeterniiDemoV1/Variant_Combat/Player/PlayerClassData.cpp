@@ -18,9 +18,8 @@ namespace PlayerClassCanon
 	struct FClassDef
 	{
 		FName ClassId;
-		FText OrderName;
 		FText DisplayName;
-		FText RoleLabel;
+		EPlayerClassArchetype Archetype = EPlayerClassArchetype::Bulwark;
 		FText FlavorText;
 		float Health = 0.0f;
 		float Armor = 0.0f;
@@ -38,9 +37,8 @@ namespace PlayerClassCanon
 	{
 		FClassDef Def;
 		Def.ClassId = PlayerClassIds::Ordo();
-		Def.OrderName = LOCTEXT("Ordo_Order", "Igni Orthodoxia");
-		Def.DisplayName = LOCTEXT("Ordo_Name", "Sworn of the Black Sigil");
-		Def.RoleLabel = LOCTEXT("Ordo_Role", "Bulwark · Melee");
+		Def.DisplayName = LOCTEXT("Ordo_Name", "Igni Orthodoxia");
+		Def.Archetype = EPlayerClassArchetype::Bulwark;
 		Def.FlavorText = LOCTEXT("Ordo_Flavor",
 			"\"I was told my name once. I gave it to the Flame for safekeeping, and it has not returned it. This is the arrangement. This is the vow.\" — Knight-monk of the First Flame, relic-blade and sigil-plate.");
 		Def.Health = 230.0f;
@@ -65,9 +63,8 @@ namespace PlayerClassCanon
 	{
 		FClassDef Def;
 		Def.ClassId = PlayerClassIds::Ignivarum();
-		Def.OrderName = LOCTEXT("Ignivarum_Order", "Genitorii Gothica");
-		Def.DisplayName = LOCTEXT("Ignivarum_Name", "Ignivarum, Fire-Bearer");
-		Def.RoleLabel = LOCTEXT("Ignivarum_Role", "Inquisitor · Aggressor");
+		Def.DisplayName = LOCTEXT("Ignivarum_Name", "Genitorii Gothica");
+		Def.Archetype = EPlayerClassArchetype::Aggressor;
 		Def.FlavorText = LOCTEXT("Ignivarum_Flavor",
 			"\"Doubt is a kind of rot. I am the answer to rot.\" — War-bred censer-bearer of the namesake order; burns the question and the questioner in one motion.");
 		Def.Health = 170.0f;
@@ -92,9 +89,8 @@ namespace PlayerClassCanon
 	{
 		FClassDef Def;
 		Def.ClassId = PlayerClassIds::Luminarch();
-		Def.OrderName = LOCTEXT("Luminarch_Order", "Luminarch Collegium");
-		Def.DisplayName = LOCTEXT("Luminarch_Name", "Luminarch Navigator-Priest");
-		Def.RoleLabel = LOCTEXT("Luminarch_Role", "Noetic · Ranged");
+		Def.DisplayName = LOCTEXT("Luminarch_Name", "Luminarch Collegium");
+		Def.Archetype = EPlayerClassArchetype::NoeticRanged;
 		Def.FlavorText = LOCTEXT("Luminarch_Flavor",
 			"\"The pattern is not hidden. It is merely louder than you are.\" — Psyker-navigator, harmonic-sensitive; reads the strata directly, and pays for the reading.");
 		Def.Health = 150.0f;
@@ -139,9 +135,8 @@ namespace PlayerClassCanon
 	static void Apply(UPlayerClassData& Target, const FClassDef& Def)
 	{
 		Target.ClassId = Def.ClassId;
-		Target.OrderName = Def.OrderName;
 		Target.DisplayName = Def.DisplayName;
-		Target.RoleLabel = Def.RoleLabel;
+		Target.Archetype = Def.Archetype;
 		Target.FlavorText = Def.FlavorText;
 		Target.BaseHealth = Def.Health;
 		Target.BaseArmor = Def.Armor;
