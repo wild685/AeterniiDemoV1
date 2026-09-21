@@ -32,6 +32,7 @@ void UCombatHUD::SetBarColor_Implementation(FLinearColor Color)
 
 void UCombatHUD::SetCorruptionPercentage_Implementation(float Percent)
 {
+	// Unbound stub: UCombatAttributeSet has no corruption attribute yet.
 	if (CorruptionMeter)
 	{
 		CorruptionMeter->SetPercent(FMath::Clamp(Percent, 0.0f, 1.0f));

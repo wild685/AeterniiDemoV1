@@ -15,7 +15,7 @@ class UProgressBar;
  *
  *  TODO(Gary): these are not registered Gameplay Tags. Rebind each well to
  *  UPlayerClassData::AbilitySlots[n].AbilityTag (PR #4) once class ability
- *  cooldown tags exist. PR #1 currently registers Ability.Attack,
+ *  cooldown tags exist. Master (PR #1) currently registers Ability.Attack,
  *  Ability.Dodge, Status.Dodge.IFrames, Data.Damage only.
  */
 namespace CombatHUDCooldownTags
@@ -40,16 +40,19 @@ namespace CombatHUDCooldownTags
 
 /**
  *  Screen-space combat HUD. Extends UCombatLifeBar so health still uses
- *  SetLifePercentage / SetBarColor.
+ *  SetLifePercentage / SetBarColor, now also SetLifeFromAttributeSet
+ *  (UCombatAttributeSet Health / MaxHealth).
  *
  *  Claude Code: WBP parent this class. Bind optional widgets listed in
  *  Docs/integration-queue/hud-extend.md. Do not replace the character
  *  WidgetComponent life bars — those stay UCombatLifeBar.
  *
- *  Corruption and cooldown GAS binds wait on Gary:
- *  - UAeterniiAttributeSet is not in the tree. PR #1 has UCombatAttributeSet
- *    with Health / MaxHealth / Stamina / MaxStamina only.
- *  - Class ability cooldown tags are not in the tree.
+ *  Stamina exists on UCombatAttributeSet (dodge stub) but this HUD has no
+ *  stamina meter — do not add one here.
+ *
+ *  Corruption is an unbound stub: UCombatAttributeSet has Health / MaxHealth /
+ *  Stamina / MaxStamina only. Wait for Gary to add a corruption attribute;
+ *  do not invent a name. Cooldown tags also wait on Gary.
  */
 UCLASS(abstract)
 class UCombatHUD : public UCombatLifeBar
@@ -62,16 +65,20 @@ public:
 
 	UCombatHUD();
 
-	/** Optional screen life fill. Name this widget LifeMeter in UMG. */
+	/**
+	 *  Optional screen life fill. Name this widget LifeMeter in UMG.
+	 *  Bind to UCombatAttributeSet Health / MaxHealth via SetLifeFromAttributeSet
+	 *  (or SetLifePercentage from OnHealthChanged).
+	 */
 	UPROPERTY(BlueprintReadOnly, Category="HUD|Life", meta=(BindWidgetOptional))
 	TObjectPtr<UProgressBar> LifeMeter;
 
 	/**
-	 *  Optional corruption fill. Name this widget CorruptionMeter in UMG.
+	 *  Unbound corruption stub. Name this widget CorruptionMeter in UMG.
 	 *
-	 *  TODO(Gary): bind to UAeterniiAttributeSet once that type lands.
-	 *  Do not assume a final attribute name — PR #1 has no Depth/Corruption
-	 *  attribute on UCombatAttributeSet.
+	 *  TODO(Gary): UCombatAttributeSet has no corruption attribute yet
+	 *  (Health / MaxHealth / Stamina / MaxStamina only). Leave this meter
+	 *  unbound until that attribute is added — do not invent a name.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category="HUD|Corruption", meta=(BindWidgetOptional))
 	TObjectPtr<UProgressBar> CorruptionMeter;
@@ -99,7 +106,7 @@ public:
 	virtual void SetLifePercentage_Implementation(float Percent) override;
 	virtual void SetBarColor_Implementation(FLinearColor Color) override;
 
-	/** 0-1 corruption. Placeholder until UAeterniiAttributeSet exists. */
+	/** 0-1 corruption stub. Not wired to UCombatAttributeSet. */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="HUD|Corruption")
 	void SetCorruptionPercentage(float Percent);
 
@@ -107,8 +114,9 @@ public:
 	void SetCorruptionBarColor(FLinearColor Color);
 
 	/**
-	 *  Convenience for a later current/max pair from UAeterniiAttributeSet.
-	 *  Does not name a GAS attribute.
+	 *  Current/max helper for a future corruption attribute on
+	 *  UCombatAttributeSet. Does not name that attribute — it is not in
+	 *  the set yet.
 	 */
 	UFUNCTION(BlueprintCallable, Category="HUD|Corruption")
 	void SetCorruptionFromCurrentMax(float Current, float MaxValue);
