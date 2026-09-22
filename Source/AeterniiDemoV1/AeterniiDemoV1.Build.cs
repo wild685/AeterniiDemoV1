@@ -37,6 +37,7 @@ public class AeterniiDemoV1 : ModuleRules
 			"AeterniiDemoV1/Variant_Combat/Gameplay",
 			"AeterniiDemoV1/Variant_Combat/Interfaces",
 			"AeterniiDemoV1/Variant_Combat/UI",
+			"AeterniiDemoV1/Variant_Combat/Player",
 			"AeterniiDemoV1/Variant_SideScrolling",
 			"AeterniiDemoV1/Variant_SideScrolling/AI",
 			"AeterniiDemoV1/Variant_SideScrolling/Gameplay",
