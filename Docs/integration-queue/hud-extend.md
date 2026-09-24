@@ -66,7 +66,7 @@ Delegates: `OnClassHighlighted(ClassId, DisplayName)`, `OnClassSelected(ClassId,
 
 ## Soft-ref paths (class select)
 
-Assets are **not** in this PR. Object paths used by `TSoftObjectPtr<UPrimaryDataAsset>` (expected type **`UPlayerClassData`** on PR #4):
+Assets are **not** in this PR. Object paths stay `TSoftObjectPtr<UPrimaryDataAsset>` soft-refs (expected type **`UPlayerClassData`**, now on master). This widget does not include `PlayerClassData.h`:
 
 | ClassId | Display name | Package | Object path |
 | --- | --- | --- | --- |
@@ -74,7 +74,7 @@ Assets are **not** in this PR. Object paths used by `TSoftObjectPtr<UPrimaryData
 | `ignivarum` | Genitorii Gothica | `/Game/Variant_Combat/Player/DA_PlayerClass_Ignivarum` | `/Game/Variant_Combat/Player/DA_PlayerClass_Ignivarum.DA_PlayerClass_Ignivarum` |
 | `luminarch` | Luminarch Collegium | `/Game/Variant_Combat/Player/DA_PlayerClass_Luminarch` | `/Game/Variant_Combat/Player/DA_PlayerClass_Luminarch.DA_PlayerClass_Luminarch` |
 
-Helpers: `CombatClassSelectPaths::*`, `CombatClassSelectIds::*`. Typed as `UPrimaryDataAsset` so this lane compiles without `UPlayerClassData`. **Optional merge order:** land PR #4 first so the DAs resolve to the real type; not required to compile this PR.
+Helpers: `CombatClassSelectPaths::*`, `CombatClassSelectIds::*`. Soft-refs stay `UPrimaryDataAsset` on purpose. Locked display names are unchanged: Igni Orthodoxia, Genitorii Gothica, Luminarch Collegium.
 
 ## What Claude Code must create in UMG
 

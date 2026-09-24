@@ -7,7 +7,8 @@
 
 #define LOCTEXT_NAMESPACE "CombatClassSelect"
 
-UCombatClassSelectScreen::UCombatClassSelectScreen()
+UCombatClassSelectScreen::UCombatClassSelectScreen(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
 	OrdoClassData = TSoftObjectPtr<UPrimaryDataAsset>(FSoftObjectPath(CombatClassSelectPaths::OrdoObject));
 	IgnivarumClassData = TSoftObjectPtr<UPrimaryDataAsset>(FSoftObjectPath(CombatClassSelectPaths::IgnivarumObject));

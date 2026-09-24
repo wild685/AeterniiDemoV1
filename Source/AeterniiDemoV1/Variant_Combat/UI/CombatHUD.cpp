@@ -55,9 +55,9 @@ void UCombatHUD::SetCorruptionFromCurrentMax(float Current, float MaxValue)
 
 void UCombatHUD::SetAbilityCooldown(int32 SlotIndex, float TimeRemaining, float Duration)
 {
-	if (UCombatAbilityCooldownSlot* Slot = GetAbilitySlot(SlotIndex))
+	if (UCombatAbilityCooldownSlot* CooldownSlot = GetAbilitySlot(SlotIndex))
 	{
-		Slot->SetCooldown(TimeRemaining, Duration);
+		CooldownSlot->SetCooldown(TimeRemaining, Duration);
 	}
 }
 
@@ -70,9 +70,9 @@ void UCombatHUD::SetAbilityCooldownTag(int32 SlotIndex, FGameplayTag CooldownTag
 
 	AbilityCooldownTags[SlotIndex] = CooldownTag;
 
-	if (UCombatAbilityCooldownSlot* Slot = GetAbilitySlot(SlotIndex))
+	if (UCombatAbilityCooldownSlot* CooldownSlot = GetAbilitySlot(SlotIndex))
 	{
-		Slot->SetCooldownTag(CooldownTag);
+		CooldownSlot->SetCooldownTag(CooldownTag);
 	}
 }
 
@@ -100,11 +100,11 @@ FGameplayTag UCombatHUD::GetAbilityCooldownTag(int32 SlotIndex) const
 
 FName UCombatHUD::GetAbilityCooldownPlaceholderName(int32 SlotIndex) const
 {
-	if (const UCombatAbilityCooldownSlot* Slot = GetAbilitySlot(SlotIndex))
+	if (const UCombatAbilityCooldownSlot* CooldownSlot = GetAbilitySlot(SlotIndex))
 	{
-		if (!Slot->PlaceholderCooldownTagName.IsNone())
+		if (!CooldownSlot->PlaceholderCooldownTagName.IsNone())
 		{
-			return Slot->PlaceholderCooldownTagName;
+			return CooldownSlot->PlaceholderCooldownTagName;
 		}
 	}
 
@@ -132,18 +132,18 @@ void UCombatHUD::InitializeAbilitySlots()
 
 	for (int32 SlotIndex = 0; SlotIndex < AbilitySlotCount; ++SlotIndex)
 	{
-		if (UCombatAbilityCooldownSlot* Slot = GetAbilitySlot(SlotIndex))
+		if (UCombatAbilityCooldownSlot* CooldownSlot = GetAbilitySlot(SlotIndex))
 		{
-			Slot->SetSlotIndex(SlotIndex);
+			CooldownSlot->SetSlotIndex(SlotIndex);
 
-			if (Slot->PlaceholderCooldownTagName.IsNone())
+			if (CooldownSlot->PlaceholderCooldownTagName.IsNone())
 			{
-				Slot->SetPlaceholderCooldownTagName(CombatHUDCooldownTags::SlotName(SlotIndex));
+				CooldownSlot->SetPlaceholderCooldownTagName(CombatHUDCooldownTags::SlotName(SlotIndex));
 			}
 
 			if (AbilityCooldownTags.IsValidIndex(SlotIndex) && AbilityCooldownTags[SlotIndex].IsValid())
 			{
-				Slot->SetCooldownTag(AbilityCooldownTags[SlotIndex]);
+				CooldownSlot->SetCooldownTag(AbilityCooldownTags[SlotIndex]);
 			}
 		}
 	}

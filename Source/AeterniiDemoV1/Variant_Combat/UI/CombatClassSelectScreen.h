@@ -12,11 +12,11 @@ class UButton;
 class UTextBlock;
 
 /**
- *  Locked Content paths for Cole's UPlayerClassData assets (PR #4).
+ *  Locked Content paths for Cole's UPlayerClassData assets.
  *  Assets may not exist yet — keep these as soft paths only.
  *
- *  Expected type name: UPlayerClassData (not compiled against here so this
- *  HUD lane builds on master before #4 merges).
+ *  UPlayerClassData is on master. This widget still soft-refs
+ *  UPrimaryDataAsset and does not include PlayerClassData.h.
  */
 namespace CombatClassSelectPaths
 {
@@ -50,24 +50,21 @@ struct FCombatClassSelectOption
 	FText DisplayName;
 
 	/**
-	 *  Soft path to Cole's UPlayerClassData. Typed as UPrimaryDataAsset so
-	 *  this widget compiles before UPlayerClassData is on master.
+	 *  Soft path to Cole's UPlayerClassData. Typed as UPrimaryDataAsset
+	 *  so this widget does not include PlayerClassData.h.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Class Select")
 	TSoftObjectPtr<UPrimaryDataAsset> ClassData;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCombatClassSelected, FName, ClassId, FSoftObjectPath, ClassDataPath);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCombatClassHighlighted, FName, ClassId, FText, DisplayName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCombatClassHighlighted, FName, ClassId, const FText&, DisplayName);
 
 /**
- *  Class-select screen base. Soft-refs the three locked player-class Data
- *  Assets and exposes Jacob's locked display names only — no order / faction
- *  subtitle widgets.
- *
- *  Merge note: UPlayerClassData lives on PR #4 (feature/player-classes).
- *  This class does not include that header. After #4, bind titles to
- *  UPlayerClassData::DisplayName when the DA is loaded.
+ *  Class-select screen base. Soft-refs Cole's three DAs as
+ *  UPrimaryDataAsset (does not include PlayerClassData.h) and exposes
+ *  the locked display names only — Igni Orthodoxia, Genitorii Gothica,
+ *  Luminarch Collegium. No order / faction subtitle widgets.
  */
 UCLASS(abstract)
 class UCombatClassSelectScreen : public UUserWidget
@@ -76,7 +73,7 @@ class UCombatClassSelectScreen : public UUserWidget
 
 public:
 
-	UCombatClassSelectScreen();
+	UCombatClassSelectScreen(const FObjectInitializer& ObjectInitializer);
 
 	/** /Game/Variant_Combat/Player/DA_PlayerClass_Ordo — Igni Orthodoxia */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Class Select|Canon")
@@ -148,7 +145,7 @@ public:
 	void SelectClass(FName ClassId);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Class Select")
-	void HandleClassHighlighted(FName ClassId, FText DisplayName);
+	void HandleClassHighlighted(FName ClassId, const FText& DisplayName);
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Class Select")
 	void HandleClassConfirmed(FName ClassId, FSoftObjectPath ClassDataPath);
