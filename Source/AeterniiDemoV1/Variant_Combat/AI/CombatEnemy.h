@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "CombatAttacker.h"
 #include "CombatDamageable.h"
@@ -10,9 +11,12 @@
 #include "Engine/TimerHandle.h"
 #include "CombatEnemy.generated.h"
 
-class UWidgetComponent;
-class UCombatLifeBar;
+class UAbilitySystemComponent;
 class UAnimMontage;
+class UAeterniiAttributeSet;
+class UCombatAbilitySystemComponent;
+class UCombatLifeBar;
+class UWidgetComponent;
 
 /** Completed attack animation delegate for StateTree */
 DECLARE_DELEGATE(FOnEnemyAttackCompleted);
@@ -25,16 +29,33 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnemyDied);
 
 /**
  *  An AI-controlled character with combat capabilities.
- *  Its bundled AI Controller runs logic through StateTree
+ *  Its bundled AI Controller runs logic through StateTree.
+ *  ASC is for Depth/Corruption. Pack damage stays on ICombatDamageable.
  */
 UCLASS(abstract)
-class ACombatEnemy : public ACharacter, public ICombatAttacker, public ICombatDamageable
+class ACombatEnemy : public ACharacter, public ICombatAttacker, public ICombatDamageable, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 	/** Life bar widget component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* LifeBar;
+
+protected:
+
+	/** ASC for Depth/Corruption. Minimal replication. Weapon damage stays on ICombatDamageable. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCombatAbilitySystemComponent> AbilitySystemComponent;
+
+	/**
+	 *  Depth / Corruption attributes. Pack HP stays on CurrentHP.
+	 *  Named AeterniiAttributeSet so it does not hide ACombatBoss::AttributeSet
+	 *  (that property is the legacy UCombatAttributeSet).
+	 */
+	UPROPERTY(BlueprintReadOnly, Category="GAS", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAeterniiAttributeSet> AeterniiAttributeSet;
+
+	bool bAeterniiAttributesInitialized = false;
 
 public:
 	
@@ -240,4 +261,16 @@ protected:
 
 	/** EndPlay cleanup */
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_Controller() override;
+
+	void InitializeAeterniiAbilitySystem();
+
+public:
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UFUNCTION(BlueprintPure, Category="GAS")
+	UAeterniiAttributeSet* GetAeterniiAttributeSet() const { return AeterniiAttributeSet; }
 };

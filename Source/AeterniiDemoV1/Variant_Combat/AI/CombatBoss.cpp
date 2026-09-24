@@ -20,10 +20,8 @@ ACombatBoss::ACombatBoss()
 	MaxHP = 20.0f;
 	CurrentHP = MaxHP;
 
-	AbilitySystemComponent = CreateDefaultSubobject<UCombatAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	AbilitySystemComponent->SetIsReplicated(true);
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
-
+	// ASC and UAeterniiAttributeSet come from ACombatEnemy (Minimal replication).
+	// This set is the legacy boss health/stamina mirror used by GE_Damage_Melee.
 	AttributeSet = CreateDefaultSubobject<UCombatAttributeSet>(TEXT("AttributeSet"));
 
 	HitboxMelee = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Hitbox_Melee"));
@@ -50,11 +48,6 @@ ACombatBoss::ACombatBoss()
 	SlamAbilityClass = UGA_Boss_Slam::StaticClass();
 	CloserAbilityClass = UGA_Boss_Closer::StaticClass();
 	MeleeDamageEffect = UGE_Damage_Melee::StaticClass();
-}
-
-UAbilitySystemComponent* ACombatBoss::GetAbilitySystemComponent() const
-{
-	return AbilitySystemComponent;
 }
 
 void ACombatBoss::SetNextAttack(EBossAttack InAttack)

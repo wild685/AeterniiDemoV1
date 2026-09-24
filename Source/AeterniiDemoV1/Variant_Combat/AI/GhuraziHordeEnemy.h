@@ -35,9 +35,9 @@ enum class EGhuraziHordeArchetype : uint8
  *  before montage notifies exist. Do not add new StateTree task types for this.
  *
  *  Damage (settled): pack/horde hits stay on ICombatDamageable::ApplyDamage /
- *  TakeDamage, same as ACombatEnemy. Do not route through UCombatAttributeSet.
- *  GAS/attribute set is for Noetic Arts + Depth/Corruption. Bosses may adopt GAS
- *  later; pack enemies stay on the interface path.
+ *  TakeDamage, same as ACombatEnemy. Do not route them through UAeterniiAttributeSet
+ *  or the legacy boss UCombatAttributeSet. The enemy ASC is only for Noetic Arts
+ *  and Depth/Corruption.
  */
 UCLASS(abstract)
 class AGhuraziHordeEnemy : public ACombatEnemy

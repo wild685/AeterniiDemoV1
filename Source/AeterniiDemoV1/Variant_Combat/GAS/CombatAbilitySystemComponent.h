@@ -10,8 +10,9 @@ class UGameplayAbility;
 class UGameplayEffect;
 
 /**
- *  Thin ASC wrapper used by the player and the boss.
+ *  Thin ASC wrapper used by the player, enemies, and the boss.
  *  InitAbilityActorInfo must be called after possess (player and AI).
+ *  Player replication is Mixed. AI replication is Minimal.
  */
 UCLASS()
 class UCombatAbilitySystemComponent : public UAbilitySystemComponent

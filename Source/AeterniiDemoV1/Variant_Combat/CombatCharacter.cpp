@@ -14,9 +14,10 @@ DEFINE_LOG_CATEGORY(LogCombatCharacter);
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "AeterniiAttributeSet.h"
 #include "CombatAbilitySystemComponent.h"
-#include "CombatAttributeSet.h"
 #include "CombatGameplayTags.h"
+#include "PlayerClassData.h"
 #include "CombatLifeBar.h"
 #include "CombatEnemy.h"
 #include "Engine/DamageEvents.h"
@@ -81,7 +82,7 @@ ACombatCharacter::ACombatCharacter()
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
-	AttributeSet = CreateDefaultSubobject<UCombatAttributeSet>(TEXT("AttributeSet"));
+	AttributeSet = CreateDefaultSubobject<UAeterniiAttributeSet>(TEXT("AttributeSet"));
 
 	// set the player tag
 	Tags.Add(FName("Player"));
@@ -392,12 +393,6 @@ void ACombatCharacter::ResetHP()
 
 	// update the life bar
 	LifeBarWidget->SetLifePercentage(1.0f);
-
-	if (AttributeSet)
-	{
-		AttributeSet->InitMaxHealth(MaxHP);
-		AttributeSet->InitHealth(MaxHP);
-	}
 }
 
 void ACombatCharacter::ComboAttack()
@@ -715,13 +710,7 @@ float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dama
 		GetMesh()->SetBodySimulatePhysics(PelvisBoneName, false);
 	}
 
-	if (AttributeSet)
-	{
-		AttributeSet->SetHealth(CurrentHP);
-		AttributeSet->SetMaxHealth(MaxHP);
-	}
-
-	// return the received damage amount
+	// Pack HP stays on CurrentHP. UAeterniiAttributeSet::Health is the Depth meter, not this hit.
 	return Damage;
 }
 
@@ -851,18 +840,30 @@ void ACombatCharacter::InitializeAbilitySystem()
 
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-	if (!bHealthDelegateBound)
+	if (!bAeterniiAttributesInitialized)
 	{
-		AttributeSet->OnHealthChanged.AddDynamic(this, &ACombatCharacter::HandleGASHealthChanged);
-		bHealthDelegateBound = true;
+		AttributeSet->InitializeDepthBaseline();
+		bAeterniiAttributesInitialized = true;
 	}
 
-	AttributeSet->InitMaxHealth(MaxHP);
-	AttributeSet->InitHealth(CurrentHP > 0.0f ? CurrentHP : MaxHP);
-	AttributeSet->InitMaxStamina(100.0f);
-	AttributeSet->InitStamina(100.0f);
-
 	GrantDefaultAbilities();
+}
+
+void ACombatCharacter::ApplyPlayerClassToAttributes(const UPlayerClassData* ClassData)
+{
+	if (!AttributeSet || !ClassData)
+	{
+		return;
+	}
+
+	AttributeSet->InitMaxHealth(ClassData->BaseHealth);
+	AttributeSet->InitHealth(ClassData->BaseHealth);
+	AttributeSet->InitArmor(ClassData->BaseArmor);
+	AttributeSet->InitMoveSpeed(ClassData->BaseMoveSpeed);
+	AttributeSet->InitDamage(ClassData->BaseDamage);
+	AttributeSet->InitAttackCooldown(ClassData->AttackCooldown);
+	AttributeSet->InitAttackRange(ClassData->AttackRange);
+	AttributeSet->InitCorruptionRate(ClassData->CorruptionRate);
 }
 
 void ACombatCharacter::GrantDefaultAbilities()
@@ -884,22 +885,6 @@ void ACombatCharacter::GrantDefaultAbilities()
 	}
 
 	bDefaultAbilitiesGranted = true;
-}
-
-void ACombatCharacter::HandleGASHealthChanged(float NewHealth, float NewMaxHealth)
-{
-	CurrentHP = NewHealth;
-	MaxHP = NewMaxHealth;
-
-	if (LifeBarWidget && NewMaxHealth > 0.0f)
-	{
-		LifeBarWidget->SetLifePercentage(NewHealth / NewMaxHealth);
-	}
-
-	if (NewHealth <= 0.0f)
-	{
-		HandleDeath();
-	}
 }
 
 UAbilitySystemComponent* ACombatCharacter::GetAbilitySystemComponent() const

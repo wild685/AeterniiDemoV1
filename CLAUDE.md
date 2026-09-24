@@ -26,9 +26,10 @@ Declared in `Source/AeterniiDemoV1/AeterniiDemoV1.Build.cs`:
 - `EnhancedInput` — all input handling
 - `AIModule` — AI controllers
 - `StateTreeModule` + `GameplayStateTreeModule` — AI behavior (StateTree, not Behavior Trees)
+- `GameplayAbilities` + `GameplayTags` + `GameplayTasks` — GAS. Depth/Corruption attributes are `UAeterniiAttributeSet` (legacy boss health/stamina remains `UCombatAttributeSet`)
 - `UMG` + `Slate` — UI widgets
 
-Enabled plugins: `StateTree`, `GameplayStateTree`, `ModelContextProtocol`, `ModelingToolsEditorMode`.
+Enabled plugins: `GameplayAbilities`, `StateTree`, `GameplayStateTree`, `ModelContextProtocol`, `ModelingToolsEditorMode`. Aura is present and parked (`Enabled: false`).
 
 ## Architecture
 
@@ -41,6 +42,7 @@ Source/AeterniiDemoV1/
 ├── AeterniiDemoV1Character/GameMode/PlayerController  ← abstract base classes
 ├── Variant_Combat/
 │   ├── AI/           ← AIController, Enemy, Spawner, StateTree tasks, EQS contexts
+│   ├── GAS/          ← UAeterniiAttributeSet, ASC, legacy boss abilities
 │   ├── Gameplay/     ← ActivationVolume, CheckpointVolume, DamageableBox, LavaFloor, Dummy
 │   ├── Interfaces/   ← ICombatAttacker, ICombatDamageable
 │   └── UI/           ← CombatLifeBar widget
@@ -56,8 +58,8 @@ All variant include paths are registered in `Build.cs` so headers can be include
 
 ### Combat Variant
 
-- `ACombatCharacter` — player character implementing `ICombatAttacker` + `ICombatDamageable`. Handles combo attack strings (montage sections), press-and-hold charged attacks, HP/ragdoll death, and respawning.
-- `ACombatEnemy` — AI enemy implementing the same two interfaces. Exposes `FOnEnemyAttackCompleted` and `FOnEnemyLanded` delegates for StateTree tasks to wait on.
+- `ACombatCharacter` — player character implementing `ICombatAttacker` + `ICombatDamageable` + `IAbilitySystemInterface`. Handles combo attack strings (montage sections), press-and-hold charged attacks, HP/ragdoll death, and respawning. Pack weapon damage stays on `CurrentHP`. `AbilitySystemComponent` (Mixed replication) and `AttributeSet` (`UAeterniiAttributeSet`) are the Noetic Arts / Depth-Corruption path.
+- `ACombatEnemy` — AI enemy implementing the same combat interfaces plus `IAbilitySystemInterface`. Exposes `FOnEnemyAttackCompleted` and `FOnEnemyLanded` delegates for StateTree tasks to wait on. `AbilitySystemComponent` uses Minimal replication and `AeterniiAttributeSet` is the `UAeterniiAttributeSet`. Pack/horde damage stays on `ICombatDamageable::ApplyDamage`. `ACombatBoss::AttributeSet` remains the legacy `UCombatAttributeSet`.
 - `ACombatAIController` — runs `UStateTreeAIComponent`; all AI logic lives in StateTree assets, not C++ tick.
 - **Interfaces**: `ICombatAttacker` (`DoAttackTrace`, `CheckCombo`, `CheckChargedAttack`) and `ICombatDamageable` (`ApplyDamage`, `HandleDeath`, `ApplyHealing`, `NotifyDanger`) are the contract between player and enemy. Both player and enemy implement both interfaces.
 - **StateTree tasks/conditions** in `CombatStateTreeUtility.h`: `FStateTreeComboAttackTask`, `FStateTreeChargedAttackTask`, `FStateTreeWaitForLandingTask`, `FStateTreeFaceActorTask`, `FStateTreeFaceLocationTask`, `FStateTreeSetCharacterSpeedTask`, `FStateTreeGetPlayerInfoTask`, `FStateTreeCharacterGroundedCondition`, `FStateTreeIsInDangerCondition`.
