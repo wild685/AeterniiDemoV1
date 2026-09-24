@@ -56,7 +56,7 @@ void ACombatEnemy::DoAIComboAttack()
 	bIsAttacking = true;
 
 	// choose how many times we're going to attack
-	TargetComboCount = FMath::RandRange(1, ComboSectionNames.Num() - 1);
+	TargetComboCount = ChooseComboHitCount();
 
 	// reset the attack counter
 	CurrentComboAttack = 0;
@@ -87,7 +87,7 @@ void ACombatEnemy::DoAIChargedAttack()
 	bIsAttacking = true;
 
 	// choose how many loops are we going to charge for
-	TargetChargeLoops = FMath::RandRange(MinChargeLoops, MaxChargeLoops);
+	TargetChargeLoops = ChooseChargeLoopCount();
 
 	// reset the charge loop counter
 	CurrentChargeLoop = 0;
@@ -113,6 +113,23 @@ void ACombatEnemy::AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 
 	// call the attack completed delegate so the StateTree can continue execution
 	OnAttackCompleted.ExecuteIfBound();
+}
+
+int32 ACombatEnemy::ChooseComboHitCount() const
+{
+	if (ComboSectionNames.Num() <= 1)
+	{
+		return 1;
+	}
+
+	return FMath::RandRange(1, ComboSectionNames.Num() - 1);
+}
+
+int32 ACombatEnemy::ChooseChargeLoopCount() const
+{
+	const int32 MinLoops = FMath::Max(1, MinChargeLoops);
+	const int32 MaxLoops = FMath::Max(MinLoops, MaxChargeLoops);
+	return FMath::RandRange(MinLoops, MaxLoops);
 }
 
 const FVector& ACombatEnemy::GetLastDangerLocation() const

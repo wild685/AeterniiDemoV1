@@ -156,19 +156,30 @@ public:
 public:
 
 	/** Performs an AI-initiated combo attack. Number of hits will be decided by this character */
-	void DoAIComboAttack();
+	virtual void DoAIComboAttack();
 
 	/** Performs an AI-initiated charged attack. Charge time will be decided by this character */
-	void DoAIChargedAttack();
+	virtual void DoAIChargedAttack();
 
 	/** Called from a delegate when the attack montage ends */
-	void AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	virtual void AttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	/** True while a combo or charged attack montage (or Ghurazi telegraph) is in flight */
+	bool IsPerformingAttack() const { return bIsAttacking; }
 
 	/** Returns the last recorded location we were attacked from */
 	const FVector& GetLastDangerLocation() const;
 
 	/** Returns the last game time we were attacked */
 	float GetLastDangerTime() const;
+
+protected:
+
+	/** How many combo sections the next AI combo string should play */
+	virtual int32 ChooseComboHitCount() const;
+
+	/** How many charge-loop sections the next AI charged attack should hold */
+	virtual int32 ChooseChargeLoopCount() const;
 
 public:
 

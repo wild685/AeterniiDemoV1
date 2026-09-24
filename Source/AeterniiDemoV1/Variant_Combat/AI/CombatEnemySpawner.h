@@ -80,14 +80,17 @@ public:
 protected:
 
 	/** Spawn an enemy and subscribe to its death event */
-	void SpawnEnemy();
+	virtual void SpawnEnemy();
 
 	/** Called when the spawned enemy has died */
 	UFUNCTION()
-	void OnEnemyDied();
+	virtual void OnEnemyDied();
 
 	/** Called after the last spawned enemy has died */
 	void SpawnerDepleted();
+
+	/** Spawn transform for an enemy, taken from the reference capsule */
+	FTransform GetSpawnCapsuleTransform() const;
 
 public:
 
