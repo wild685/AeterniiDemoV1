@@ -376,7 +376,7 @@ void AGhuraziHordeEnemy::DealHordeDamage(AActor* HitActor, const FVector& Damage
 	}
 
 	// Settled: pack/horde weapon hits use ICombatDamageable::ApplyDamage / TakeDamage.
-	// Do not route through UCombatAttributeSet (GAS is Noetic Arts + Depth/Corruption).
+	// Do not route through UAeterniiAttributeSet (GAS is Noetic Arts + Depth/Corruption).
 	Damageable->ApplyDamage(MeleeDamage, this, DamageLocation, Impulse);
 }
 

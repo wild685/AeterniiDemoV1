@@ -3,14 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "AbilitySystemInterface.h"
 #include "CombatBossTypes.h"
 #include "CombatEnemy.h"
 #include "CombatBoss.generated.h"
 
 class UAnimMontage;
 class UCapsuleComponent;
-class UCombatAbilitySystemComponent;
 class UCombatAttributeSet;
 class UGameplayAbility;
 class UGameplayEffect;
@@ -22,12 +20,9 @@ class UGameplayEffect;
  *  Attacks are Gameplay Abilities (TryActivateAbility), never raw PlayMontage.
  */
 UCLASS(abstract)
-class ACombatBoss : public ACombatEnemy, public IAbilitySystemInterface
+class ACombatBoss : public ACombatEnemy
 {
 	GENERATED_BODY()
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UCombatAbilitySystemComponent> AbilitySystemComponent;
 
 	/** Forward melee capsule. Disabled until the Active damage window. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
@@ -41,8 +36,7 @@ public:
 
 	ACombatBoss();
 
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-
+	/** Legacy boss health/stamina set. Depth attributes are ACombatEnemy::GetAeterniiAttributeSet. */
 	UFUNCTION(BlueprintPure, Category = "GAS")
 	UCombatAttributeSet* GetAttributeSet() const { return AttributeSet; }
 

@@ -2,6 +2,9 @@
 
 
 #include "CombatEnemy.h"
+#include "AeterniiAttributeSet.h"
+#include "AbilitySystemComponent.h"
+#include "CombatAbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "CombatAIController.h"
@@ -42,6 +45,12 @@ ACombatEnemy::ACombatEnemy()
 
 	// reset HP to maximum
 	CurrentHP = MaxHP;
+
+	AbilitySystemComponent = CreateDefaultSubobject<UCombatAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	AeterniiAttributeSet = CreateDefaultSubobject<UAeterniiAttributeSet>(TEXT("AeterniiAttributeSet"));
 }
 
 void ACombatEnemy::DoAIComboAttack()
@@ -356,6 +365,41 @@ void ACombatEnemy::BeginPlay()
 
 	// fill the life bar
 	LifeBarWidget->SetLifePercentage(1.0f);
+
+	InitializeAeterniiAbilitySystem();
+}
+
+void ACombatEnemy::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	InitializeAeterniiAbilitySystem();
+}
+
+void ACombatEnemy::OnRep_Controller()
+{
+	Super::OnRep_Controller();
+	InitializeAeterniiAbilitySystem();
+}
+
+void ACombatEnemy::InitializeAeterniiAbilitySystem()
+{
+	if (!AbilitySystemComponent || !AeterniiAttributeSet)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+	if (!bAeterniiAttributesInitialized)
+	{
+		AeterniiAttributeSet->InitializeDepthBaseline();
+		bAeterniiAttributesInitialized = true;
+	}
+}
+
+UAbilitySystemComponent* ACombatEnemy::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
 }
 
 void ACombatEnemy::EndPlay(EEndPlayReason::Type EndPlayReason)

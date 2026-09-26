@@ -16,8 +16,9 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCombatHealthChanged, float, NewHealth, float, NewMaxHealth);
 
 /**
- *  GAS-lite attributes for the combat variant.
- *  Health / MaxHealth drive damage. Stamina is reserved for a later dodge cost.
+ *  Legacy boss health/stamina set used by GE_Damage_Melee.
+ *  Depth, Corruption, and the isometric combat fields live on UAeterniiAttributeSet.
+ *  Stamina is reserved for a later dodge cost and is not spent.
  */
 UCLASS()
 class UCombatAttributeSet : public UAttributeSet

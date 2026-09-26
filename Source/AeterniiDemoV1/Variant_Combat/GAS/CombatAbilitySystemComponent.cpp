@@ -2,6 +2,7 @@
 
 #include "CombatAbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "CombatAttributeSet.h"
 #include "CombatDamageable.h"
 #include "CombatGameplayTags.h"
 #include "GameplayEffect.h"
@@ -49,7 +50,9 @@ bool UCombatAbilitySystemComponent::ApplyMeleeDamageTo(AActor* Target, float Dam
 		return false;
 	}
 
-	if (TargetASC && EffectClass)
+	// GE_Damage_Melee writes UCombatAttributeSet::Health (legacy boss mirror).
+	// Player and horde pawns carry UAeterniiAttributeSet only, so pack hits stay on the interface.
+	if (TargetASC && EffectClass && TargetASC->GetSet<UCombatAttributeSet>())
 	{
 		FGameplayEffectContextHandle Context = MakeEffectContext();
 		Context.AddSourceObject(GetAvatarActor());

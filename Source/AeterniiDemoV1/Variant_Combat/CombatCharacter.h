@@ -20,8 +20,9 @@ struct FInputActionValue;
   class ACombatEnemy;
 class UAbilitySystemComponent;
 class UCombatAbilitySystemComponent;
-class UCombatAttributeSet;
+class UAeterniiAttributeSet;
 class UGameplayAbility;
+class UPlayerClassData;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogCombatCharacter, Log, All);
 
@@ -50,7 +51,7 @@ class ACombatCharacter : public ACharacter, public ICombatAttacker, public IComb
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UWidgetComponent* LifeBar;
 
-	/** GAS-lite ASC. InitAbilityActorInfo runs after possess (and on client OnRep_Controller). */
+	/** ASC for Noetic Arts and Depth/Corruption. Mixed replication. Weapon combos stay on ICombatAttacker. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCombatAbilitySystemComponent> AbilitySystemComponent;
 	
@@ -222,15 +223,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Targeting")
 	TObjectPtr<ACombatEnemy> LockedTarget;
 
-	UPROPERTY()
-	TObjectPtr<UCombatAttributeSet> AttributeSet;
+	/** Depth / Corruption attributes. Pack HP stays on CurrentHP / MaxHP. */
+	UPROPERTY(BlueprintReadOnly, Category="GAS", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAeterniiAttributeSet> AttributeSet;
 
 	/** Granted on possess. Empty defaults to GA_Dodge. */
 	UPROPERTY(EditDefaultsOnly, Category="GAS")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
 
 	bool bDefaultAbilitiesGranted = false;
-	bool bHealthDelegateBound = false;
+	bool bAeterniiAttributesInitialized = false;
 	bool bIsDead = false;
 
 	/** Attack montage ended delegate */
@@ -419,9 +421,6 @@ protected:
 	void InitializeAbilitySystem();
 	void GrantDefaultAbilities();
 
-	UFUNCTION()
-	void HandleGASHealthChanged(float NewHealth, float NewMaxHealth);
-
 public:
 
 	/** Returns CameraBoom subobject **/
@@ -431,6 +430,17 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UFUNCTION(BlueprintPure, Category="GAS")
+	UAeterniiAttributeSet* GetAeterniiAttributeSet() const { return AttributeSet; }
+
+	/**
+	 *  Copies the seven isometric combat fields from a player class onto AttributeSet:
+	 *  Health, MaxHealth, Armor, MoveSpeed, Damage, AttackCooldown, AttackRange, CorruptionRate.
+	 *  Does not change pack CurrentHP / MaxHP, Depth, or Corruption.
+	 */
+	UFUNCTION(BlueprintCallable, Category="GAS")
+	void ApplyPlayerClassToAttributes(const UPlayerClassData* ClassData);
 
 	UFUNCTION(BlueprintPure, Category="GAS")
 	bool HasDodgeIFrames() const;

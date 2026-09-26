@@ -10,6 +10,7 @@ UGE_Damage_Melee::UGE_Damage_Melee()
 	DurationPolicy = EGameplayEffectDurationType::Instant;
 
 	FGameplayModifierInfo HealthModifier;
+	// Legacy boss health only. UAeterniiAttributeSet::Health is the Depth meter and is not this modifier.
 	HealthModifier.Attribute = UCombatAttributeSet::GetHealthAttribute();
 	HealthModifier.ModifierOp = EGameplayModOp::Additive;
 
