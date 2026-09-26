@@ -189,7 +189,7 @@ public:
 	 *  DamageReduction is the demo's buffs.dr.amt (0 when the buff is absent).
 	 */
 	UFUNCTION(BlueprintPure, Category="Aeternii|Corruption")
-	static float ComputeIncomingHarm(float Amount, float DepthDamageMultiplier, float Armor, float Corruption, float DamageReduction);
+	static float ComputeIncomingHarm(float Amount, float DepthDamageMultiplier, float InArmor, float InCorruption, float DamageReduction);
 
 	/** Same formula using this set's Depth, Armor, and Corruption. Does not modify Health. */
 	UFUNCTION(BlueprintPure, Category="Aeternii|Corruption")
@@ -216,7 +216,7 @@ public:
 
 	/** If corruption > 60, returns 1 - (corruption - 60) / 400. Otherwise 1. */
 	UFUNCTION(BlueprintPure, Category="Aeternii|Corruption")
-	static float CorruptionSpeedScale(float Corruption);
+	static float CorruptionSpeedScale(float InCorruption);
 
 	/** If DepthIndex > 0, subtracts 1 corruption (unmake refund). Otherwise unchanged. */
 	UFUNCTION(BlueprintPure, Category="Aeternii|Corruption")

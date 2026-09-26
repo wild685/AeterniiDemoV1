@@ -128,13 +128,13 @@ void UAeterniiAttributeSet::InitializeDepthBaseline()
 	InitDepth(0.0f);
 }
 
-float UAeterniiAttributeSet::ComputeIncomingHarm(float Amount, float DepthDamageMultiplier, float Armor, float Corruption, float DamageReduction)
+float UAeterniiAttributeSet::ComputeIncomingHarm(float Amount, float DepthDamageMultiplier, float InArmor, float InCorruption, float DamageReduction)
 {
-	float Harm = Amount * DepthDamageMultiplier * (1.0f - Armor);
+	float Harm = Amount * DepthDamageMultiplier * (1.0f - InArmor);
 	Harm *= (1.0f - DamageReduction);
-	if (Corruption > AeterniiCorruptionMeter::ThinSelfThreshold)
+	if (InCorruption > AeterniiCorruptionMeter::ThinSelfThreshold)
 	{
-		Harm *= 1.0f + (Corruption - AeterniiCorruptionMeter::ThinSelfThreshold) / AeterniiCorruptionMeter::ThinSelfDivisor;
+		Harm *= 1.0f + (InCorruption - AeterniiCorruptionMeter::ThinSelfThreshold) / AeterniiCorruptionMeter::ThinSelfDivisor;
 	}
 	return Harm;
 }
@@ -182,11 +182,11 @@ float UAeterniiAttributeSet::AdvanceCorruptionMeter(float DeltaSeconds, bool bPu
 	return Next;
 }
 
-float UAeterniiAttributeSet::CorruptionSpeedScale(float Corruption)
+float UAeterniiAttributeSet::CorruptionSpeedScale(float InCorruption)
 {
-	if (Corruption > AeterniiCorruptionMeter::SpeedPenaltyThreshold)
+	if (InCorruption > AeterniiCorruptionMeter::SpeedPenaltyThreshold)
 	{
-		return 1.0f - (Corruption - AeterniiCorruptionMeter::SpeedPenaltyThreshold) / AeterniiCorruptionMeter::SpeedPenaltyDivisor;
+		return 1.0f - (InCorruption - AeterniiCorruptionMeter::SpeedPenaltyThreshold) / AeterniiCorruptionMeter::SpeedPenaltyDivisor;
 	}
 	return 1.0f;
 }
