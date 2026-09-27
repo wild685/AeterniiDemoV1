@@ -8,6 +8,7 @@
 #include "UObject/SoftObjectPath.h"
 #include "CombatClassSelectScreen.generated.h"
 
+class ACombatPlayerController;
 class UButton;
 class UTextBlock;
 
@@ -119,7 +120,11 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category="Class Select", meta=(BindWidgetOptional))
 	TObjectPtr<UTextBlock> Text_SelectedClassName;
 
-	/** Confirm broadcast: ClassId and the soft class-data path. This screen does not apply attributes. */
+	/**
+	 *  Confirm broadcast: ClassId and the soft class-data path.
+	 *  This screen does not apply attributes. ACombatPlayerController
+	 *  binds this when it owns the widget.
+	 */
 	UPROPERTY(BlueprintAssignable, Category="Class Select")
 	FOnCombatClassSelected OnClassSelected;
 
@@ -140,10 +145,8 @@ public:
 
 	/**
 	 *  Commits HighlightedClassId by broadcasting OnClassSelected.
-	 *  TODO(Cole): do not call ApplyPlayerClassToAttributes here.
-	 *  ACombatPlayerController stores the selection and calls
-	 *  ApplyPlayerClassToAttributes on the possessed ACombatCharacter in OnPossess
-	 *  (also covers respawns). Cole owns that controller hook. Not this PR.
+	 *  Does not call ApplyPlayerClassToAttributes. The owning
+	 *  ACombatPlayerController stores the pick and applies it.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Class Select")
 	void ConfirmSelection();
@@ -165,6 +168,8 @@ protected:
 
 	virtual void NativeConstruct() override;
 
+	virtual void NativeDestruct() override;
+
 	UFUNCTION()
 	void HandleOrdoClicked();
 
@@ -178,6 +183,8 @@ protected:
 	void HandleConfirmClicked();
 
 	void BindClassButtons();
+	void BindClassSelectionToPlayerController();
+	void UnbindClassSelectionFromPlayerController();
 	void HandleClassButtonClicked(FName ClassId);
 	void UpdateSelectedClassName(const FText& DisplayName);
 };

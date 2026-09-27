@@ -2,6 +2,7 @@
 
 
 #include "CombatClassSelectScreen.h"
+#include "CombatPlayerController.h"
 #include "Components/Button.h"
 #include "Components/TextBlock.h"
 
@@ -75,9 +76,6 @@ void UCombatClassSelectScreen::HighlightClass(FName ClassId)
 
 void UCombatClassSelectScreen::ConfirmSelection()
 {
-	// TODO(Cole): broadcast OnClassSelected only. ACombatPlayerController stores the selection
-	// and calls ApplyPlayerClassToAttributes on the possessed ACombatCharacter in OnPossess
-	// (also covers respawns). Cole owns that controller hook. Not this PR.
 	if (HighlightedClassId.IsNone())
 	{
 		return;
@@ -100,6 +98,13 @@ void UCombatClassSelectScreen::NativeConstruct()
 {
 	Super::NativeConstruct();
 	BindClassButtons();
+	BindClassSelectionToPlayerController();
+}
+
+void UCombatClassSelectScreen::NativeDestruct()
+{
+	UnbindClassSelectionFromPlayerController();
+	Super::NativeDestruct();
 }
 
 void UCombatClassSelectScreen::HandleOrdoClicked()
@@ -120,6 +125,27 @@ void UCombatClassSelectScreen::HandleLuminarchClicked()
 void UCombatClassSelectScreen::HandleConfirmClicked()
 {
 	ConfirmSelection();
+}
+
+void UCombatClassSelectScreen::BindClassSelectionToPlayerController()
+{
+	ACombatPlayerController* CombatPC = Cast<ACombatPlayerController>(GetOwningPlayer());
+	if (!IsValid(CombatPC))
+	{
+		return;
+	}
+
+	OnClassSelected.RemoveDynamic(CombatPC, &ACombatPlayerController::HandleClassSelected);
+	OnClassSelected.AddDynamic(CombatPC, &ACombatPlayerController::HandleClassSelected);
+}
+
+void UCombatClassSelectScreen::UnbindClassSelectionFromPlayerController()
+{
+	ACombatPlayerController* CombatPC = Cast<ACombatPlayerController>(GetOwningPlayer());
+	if (IsValid(CombatPC))
+	{
+		OnClassSelected.RemoveDynamic(CombatPC, &ACombatPlayerController::HandleClassSelected);
+	}
 }
 
 void UCombatClassSelectScreen::BindClassButtons()

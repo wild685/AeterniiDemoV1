@@ -100,7 +100,7 @@ Either path writes `CorruptionMeter` through `SetCorruptionPercentage` (`Corrupt
 
 **Life.** `LifeMeter` stays on **`UCombatAttributeSet` Health / MaxHealth** via `SetLifeFromAttributeSet`. `UAeterniiAttributeSet::Health` is the isometric hp field and is not this meter.
 
-**Class select.** `UCombatClassSelectScreen` only broadcasts the pick (`OnClassHighlighted` while browsing, `OnClassSelected` on confirm: `ClassId` and the soft class-data path). It does not call `ApplyPlayerClassToAttributes`. TODO(Cole): `ACombatPlayerController` stores the selection and calls `ApplyPlayerClassToAttributes` on the possessed `ACombatCharacter` in `OnPossess` (also covers respawns). That controller hook is Cole's follow-up, not this PR.
+**Class select.** `UCombatClassSelectScreen` only broadcasts the pick (`OnClassHighlighted` while browsing, `OnClassSelected` on confirm: `ClassId` and the soft class-data path). It does not call `ApplyPlayerClassToAttributes`. `ACombatPlayerController` binds `OnClassSelected` when it owns the widget, stores the `UPlayerClassData`, and calls `ApplyPlayerClassToAttributes` immediately if a combat pawn is already possessed and again from `OnPossess` (respawn). See `Docs/integration-queue/player-classes.md`.
 
 **Cooldowns.** Placeholder tags `Ability.HUD.Cooldown.Slot0`–`Slot3` are unchanged.
 
