@@ -26,9 +26,15 @@ Helpers: `UPlayerClassData::GetExpectedAssetPath(ClassId)`, `PlayerClassAsset::P
 
 ## Editor fill
 
+Setting **Class Id** to `ordo` / `ignivarum` / `luminarch` fills canon defaults automatically. That runs from the Details panel, from the editor property system (including Unreal MCP property sets), and when the editor loads an asset that was saved with a canon ClassId but empty fields. A load that fills fields marks the package dirty so the result can be saved.
+
+Auto-fill writes a field only when it is still empty or zero: DisplayName, flavor, combat numbers, each stat, and ability slots when every slot is still empty. Hand edits that already have a value stay put. Numeric 0 and empty text count as unset, so a saved 0 is filled again on the next editor load. Archetype and ranged are written only when the rest of that payload is still blank, because Bulwark / melee are valid values and have no separate empty sentinel.
+
+**Apply Canon Defaults From Editor** (and `ApplyCanonDefaults` / `ApplyCanonDefaultsForId`) is the full reset: it overwrites canon fields for the current ClassId, and it can still infer ClassId from a `DA_PlayerClass_*` asset name. Character Class, Preview Mesh, ability tags, and ability classes are left as they are.
+
 1. Create the DA at the path above.
-2. Set **Class Id** to `ordo` / `ignivarum` / `luminarch` (or name the asset `DA_PlayerClass_*` so it can be inferred).
-3. Click **Apply Canon Defaults From Editor** (or call `ApplyCanonDefaults` / `ApplyCanonDefaultsForId`).
+2. Set **Class Id** to `ordo` / `ignivarum` / `luminarch`. Empty fields fill on their own.
+3. Use **Apply Canon Defaults From Editor** when you want canon values to replace existing ones.
 4. Leave **Character Class** and **Preview Mesh** unset — Claude Code assigns the Combat character BP / mesh.
 5. Leave **Ability Tag** / **Ability Class** empty on each slot — Gary owns real tags.
 

@@ -6,6 +6,7 @@
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
 #include "UObject/SoftObjectPath.h"
+#include "UObject/UnrealType.h"
 #include "PlayerClassData.generated.h"
 
 class ACombatCharacter;
@@ -108,8 +109,9 @@ enum class EPlayerClassArchetype : uint8
  *
  *  Create editor instances at the Content paths in PlayerClassAsset (see
  *  Docs/integration-queue/player-classes.md). This C++ type ships without
- *  .uasset instances — call ApplyCanonDefaults after setting ClassId to
- *  fill isometric-demo numbers without baking them into BP defaults.
+ *  .uasset instances. Setting ClassId in the editor fills isometric-demo
+ *  numbers into fields that are still empty or zero. ApplyCanonDefaults
+ *  overwrites those fields for an explicit reset.
  *
  *  PrimaryAssetType: PlayerClass. Priya should soft-ref the three DAs by path
  *  and bind the select screen to DisplayName only.
@@ -125,7 +127,10 @@ public:
 
 	UPlayerClassData();
 
-	/** Stable id: ordo, ignivarum, or luminarch. */
+	/**
+	 *  Stable id: ordo, ignivarum, or luminarch.
+	 *  Changing this in the editor fills canon defaults for fields that are still empty or zero.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Identity")
 	FName ClassId;
 
@@ -227,11 +232,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Player Class")
 	static bool ApplyCanonDefaultsForId(UPlayerClassData* Target, FName InClassId);
 
-	/** Details-panel button. Uses ClassId (or infers it from the asset name). */
+	/** Details-panel button. Overwrites canon fields from ClassId (or infers ClassId from the asset name). */
 	UFUNCTION(CallInEditor, Category="Player Class")
 	void ApplyCanonDefaultsFromEditor();
 
 protected:
 
 	FName ResolveClassId() const;
+
+#if WITH_EDITOR
+	virtual void PostLoad() override;
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+
+	/**
+	 *  Writes canon values only into fields that are still empty or zero.
+	 *  Returns true if any field changed.
+	 */
+	bool ApplyCanonDefaultsToEmptyFields();
+#endif
 };

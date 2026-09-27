@@ -3,6 +3,10 @@
 #include "PlayerClassData.h"
 #include "Misc/PackageName.h"
 
+#if WITH_EDITOR
+#include "Async/Async.h"
+#endif
+
 DEFINE_LOG_CATEGORY(LogPlayerClassData);
 
 #define LOCTEXT_NAMESPACE "PlayerClassData"
@@ -132,22 +136,8 @@ namespace PlayerClassCanon
 		return nullptr;
 	}
 
-	static void Apply(UPlayerClassData& Target, const FClassDef& Def)
+	static void RebuildAbilitySlots(UPlayerClassData& Target, const FClassDef& Def)
 	{
-		Target.ClassId = Def.ClassId;
-		Target.DisplayName = Def.DisplayName;
-		Target.Archetype = Def.Archetype;
-		Target.FlavorText = Def.FlavorText;
-		Target.BaseHealth = Def.Health;
-		Target.BaseArmor = Def.Armor;
-		Target.BaseMoveSpeed = Def.Speed;
-		Target.BaseDamage = Def.Damage;
-		Target.AttackCooldown = Def.AttackCooldown;
-		Target.AttackRange = Def.AttackRange;
-		Target.bIsRanged = Def.bIsRanged;
-		Target.CorruptionRate = Def.CorruptionRate;
-		Target.Stats = Def.Stats;
-
 		TMap<FName, FPlayerClassAbilitySlot> PreviousSlots;
 		for (const FPlayerClassAbilitySlot& Slot : Target.AbilitySlots)
 		{
@@ -178,9 +168,171 @@ namespace PlayerClassCanon
 		{
 			Target.AbilitySlots.Add(FPlayerClassAbilitySlot());
 		}
+	}
+
+	static void Apply(UPlayerClassData& Target, const FClassDef& Def)
+	{
+		Target.ClassId = Def.ClassId;
+		Target.DisplayName = Def.DisplayName;
+		Target.Archetype = Def.Archetype;
+		Target.FlavorText = Def.FlavorText;
+		Target.BaseHealth = Def.Health;
+		Target.BaseArmor = Def.Armor;
+		Target.BaseMoveSpeed = Def.Speed;
+		Target.BaseDamage = Def.Damage;
+		Target.AttackCooldown = Def.AttackCooldown;
+		Target.AttackRange = Def.AttackRange;
+		Target.bIsRanged = Def.bIsRanged;
+		Target.CorruptionRate = Def.CorruptionRate;
+		Target.Stats = Def.Stats;
+		RebuildAbilitySlots(Target, Def);
 
 		// CharacterClass / PreviewMesh are not touched so in-editor mesh refs survive a re-apply.
 	}
+
+#if WITH_EDITOR
+	static bool IsAbilitySlotEmpty(const FPlayerClassAbilitySlot& Slot)
+	{
+		return Slot.AbilityId.IsNone()
+			&& Slot.DisplayName.IsEmpty()
+			&& !Slot.AbilityTag.IsValid()
+			&& Slot.AbilityClass.IsNull();
+	}
+
+	static bool AreAbilitySlotsEmpty(const UPlayerClassData& Target)
+	{
+		for (const FPlayerClassAbilitySlot& Slot : Target.AbilitySlots)
+		{
+			if (!IsAbilitySlotEmpty(Slot))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** True when every canon field that has an empty/zero sentinel is still unset. */
+	static bool IsUntouchedPayload(const UPlayerClassData& Target)
+	{
+		if (!Target.DisplayName.IsEmpty() || !Target.FlavorText.IsEmpty())
+		{
+			return false;
+		}
+
+		if (Target.BaseHealth != 0.0f
+			|| Target.BaseArmor != 0.0f
+			|| Target.BaseMoveSpeed != 0.0f
+			|| Target.BaseDamage != 0.0f
+			|| Target.AttackCooldown != 0.0f
+			|| Target.AttackRange != 0.0f
+			|| Target.CorruptionRate != 0.0f)
+		{
+			return false;
+		}
+
+		if (Target.Stats.Vitae != 0
+			|| Target.Stats.Alacrity != 0
+			|| Target.Stats.Noesis != 0
+			|| Target.Stats.Aegis != 0)
+		{
+			return false;
+		}
+
+		return AreAbilitySlotsEmpty(Target);
+	}
+
+	static bool ApplyToEmptyFields(UPlayerClassData& Target, const FClassDef& Def)
+	{
+		bool bChanged = false;
+		// Captured before writes. Archetype / bIsRanged use this so a later non-zero stat does not count as a hand edit.
+		const bool bUntouched = IsUntouchedPayload(Target);
+
+		auto FillText = [&bChanged](FText& Field, const FText& Canon)
+		{
+			if (Field.IsEmpty() && !Canon.IsEmpty())
+			{
+				Field = Canon;
+				bChanged = true;
+			}
+		};
+		auto FillFloat = [&bChanged](float& Field, float Canon)
+		{
+			if (Field == 0.0f && Canon != 0.0f)
+			{
+				Field = Canon;
+				bChanged = true;
+			}
+		};
+		auto FillInt = [&bChanged](int32& Field, int32 Canon)
+		{
+			if (Field == 0 && Canon != 0)
+			{
+				Field = Canon;
+				bChanged = true;
+			}
+		};
+
+		FillText(Target.DisplayName, Def.DisplayName);
+		FillText(Target.FlavorText, Def.FlavorText);
+		FillFloat(Target.BaseHealth, Def.Health);
+		FillFloat(Target.BaseArmor, Def.Armor);
+		FillFloat(Target.BaseMoveSpeed, Def.Speed);
+		FillFloat(Target.BaseDamage, Def.Damage);
+		FillFloat(Target.AttackCooldown, Def.AttackCooldown);
+		FillFloat(Target.AttackRange, Def.AttackRange);
+		FillFloat(Target.CorruptionRate, Def.CorruptionRate);
+		FillInt(Target.Stats.Vitae, Def.Stats.Vitae);
+		FillInt(Target.Stats.Alacrity, Def.Stats.Alacrity);
+		FillInt(Target.Stats.Noesis, Def.Stats.Noesis);
+		FillInt(Target.Stats.Aegis, Def.Stats.Aegis);
+
+		// Bulwark and bIsRanged=false are both the C++ default and valid canon. Only write them
+		// while the rest of the asset is still blank, so a saved hand edit is left alone.
+		if (bUntouched)
+		{
+			if (Target.Archetype != Def.Archetype)
+			{
+				Target.Archetype = Def.Archetype;
+				bChanged = true;
+			}
+			if (Target.bIsRanged != Def.bIsRanged)
+			{
+				Target.bIsRanged = Def.bIsRanged;
+				bChanged = true;
+			}
+		}
+
+		if (AreAbilitySlotsEmpty(Target) && Def.Abilities.Num() > 0)
+		{
+			RebuildAbilitySlots(Target, Def);
+			bChanged = true;
+		}
+		else
+		{
+			for (FPlayerClassAbilitySlot& Slot : Target.AbilitySlots)
+			{
+				if (Slot.AbilityId.IsNone() || !Slot.DisplayName.IsEmpty())
+				{
+					continue;
+				}
+
+				for (const FAbilityDef& Ability : Def.Abilities)
+				{
+					if (Ability.Id != Slot.AbilityId)
+					{
+						continue;
+					}
+
+					Slot.DisplayName = Ability.DisplayName;
+					bChanged = true;
+					break;
+				}
+			}
+		}
+
+		return bChanged;
+	}
+#endif
 }
 
 UPlayerClassData::UPlayerClassData()
@@ -271,6 +423,110 @@ void UPlayerClassData::ApplyCanonDefaultsFromEditor()
 {
 	ApplyCanonDefaults();
 }
+
+#if WITH_EDITOR
+bool UPlayerClassData::ApplyCanonDefaultsToEmptyFields()
+{
+	const PlayerClassCanon::FClassDef* Def = PlayerClassCanon::Find(ClassId);
+	if (!Def)
+	{
+		return false;
+	}
+
+	const bool bChanged = PlayerClassCanon::ApplyToEmptyFields(*this, *Def);
+	if (bChanged)
+	{
+		UE_LOG(LogPlayerClassData, Log, TEXT("%s: filled empty canon fields for '%s'."), *GetName(), *Def->ClassId.ToString());
+	}
+	return bChanged;
+}
+
+void UPlayerClassData::PostLoad()
+{
+	Super::PostLoad();
+
+	if (IsTemplate() || HasAnyFlags(RF_Transient))
+	{
+		return;
+	}
+
+	const UPackage* Package = GetOutermost();
+	if (!Package
+		|| Package == GetTransientPackage()
+		|| Package->HasAnyPackageFlags(PKG_CompiledIn | PKG_PlayInEditor | PKG_ForDiffing))
+	{
+		return;
+	}
+
+	TWeakObjectPtr<UPlayerClassData> WeakThis(this);
+	auto MarkDirtyOnGameThread = [WeakThis]()
+	{
+		if (UPlayerClassData* Asset = WeakThis.Get())
+		{
+			Asset->MarkPackageDirty();
+		}
+	};
+
+	// Canon names are FText, so a loader thread must not build them. Heal on the game thread instead.
+	if (!IsInGameThread())
+	{
+		if (!IsRunningCommandlet())
+		{
+			AsyncTask(ENamedThreads::GameThread, [WeakThis]()
+			{
+				UPlayerClassData* Asset = WeakThis.Get();
+				if (!Asset || !Asset->ApplyCanonDefaultsToEmptyFields())
+				{
+					return;
+				}
+				if (GIsEditor && !IsRunningCommandlet())
+				{
+					Asset->MarkPackageDirty();
+				}
+			});
+		}
+		return;
+	}
+
+	// Fill before PostLoad returns so a cooker serializes the healed values.
+	// The loader clears a dirty flag set in PostLoad, so mark it on a later turn.
+	if (ApplyCanonDefaultsToEmptyFields() && GIsEditor && !IsRunningCommandlet())
+	{
+		AsyncTask(ENamedThreads::GameThread, MarkDirtyOnGameThread);
+	}
+}
+
+void UPlayerClassData::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	if (GIsTransacting || IsTemplate())
+	{
+		return;
+	}
+
+	if (PropertyChangedEvent.ChangeType == EPropertyChangeType::Interactive)
+	{
+		return;
+	}
+
+	const FName ClassIdName = GET_MEMBER_NAME_CHECKED(UPlayerClassData, ClassId);
+	const bool bClassIdEdited = PropertyChangedEvent.GetMemberPropertyName() == ClassIdName
+		|| PropertyChangedEvent.GetPropertyName() == ClassIdName;
+	if (!bClassIdEdited)
+	{
+		return;
+	}
+
+	if (!IsCanonClassId(ClassId))
+	{
+		return;
+	}
+
+	Modify();
+	ApplyCanonDefaultsToEmptyFields();
+}
+#endif
 
 FName UPlayerClassData::ResolveClassId() const
 {
