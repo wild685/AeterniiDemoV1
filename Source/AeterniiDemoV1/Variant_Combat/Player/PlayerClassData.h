@@ -7,6 +7,9 @@
 #include "GameplayTagContainer.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/UnrealType.h"
+#if WITH_EDITOR
+#include "UObject/ObjectSaveContext.h"
+#endif
 #include "PlayerClassData.generated.h"
 
 class ACombatCharacter;
@@ -109,9 +112,10 @@ enum class EPlayerClassArchetype : uint8
  *
  *  Create editor instances at the Content paths in PlayerClassAsset (see
  *  Docs/integration-queue/player-classes.md). This C++ type ships without
- *  .uasset instances. Setting ClassId in the editor fills isometric-demo
- *  numbers into fields that are still empty or zero. ApplyCanonDefaults
- *  overwrites those fields for an explicit reset.
+ *  .uasset instances. Setting ClassId in the editor, saving the asset, or
+ *  loading an asset that still has empty fields fills isometric-demo numbers
+ *  into fields that are still empty or zero. ApplyCanonDefaults overwrites
+ *  those fields for an explicit reset.
  *
  *  PrimaryAssetType: PlayerClass. Priya should soft-ref the three DAs by path
  *  and bind the select screen to DisplayName only.
@@ -242,10 +246,12 @@ protected:
 
 #if WITH_EDITOR
 	virtual void PostLoad() override;
+	virtual void PreSave(FObjectPreSaveContext ObjectSaveContext) override;
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
 	/**
 	 *  Writes canon values only into fields that are still empty or zero.
+	 *  Uses ResolveClassId(), so a blank ClassId is taken from the asset name.
 	 *  Returns true if any field changed.
 	 */
 	bool ApplyCanonDefaultsToEmptyFields();

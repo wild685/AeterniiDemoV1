@@ -286,6 +286,13 @@ namespace PlayerClassCanon
 		FillInt(Target.Stats.Noesis, Def.Stats.Noesis);
 		FillInt(Target.Stats.Aegis, Def.Stats.Aegis);
 
+		// None is unset. A ClassId that is already set is a hand edit and stays.
+		if (Target.ClassId.IsNone())
+		{
+			Target.ClassId = Def.ClassId;
+			bChanged = true;
+		}
+
 		// Bulwark and bIsRanged=false are both the C++ default and valid canon. Only write them
 		// while the rest of the asset is still blank, so a saved hand edit is left alone.
 		if (bUntouched)
@@ -427,7 +434,7 @@ void UPlayerClassData::ApplyCanonDefaultsFromEditor()
 #if WITH_EDITOR
 bool UPlayerClassData::ApplyCanonDefaultsToEmptyFields()
 {
-	const PlayerClassCanon::FClassDef* Def = PlayerClassCanon::Find(ClassId);
+	const PlayerClassCanon::FClassDef* Def = PlayerClassCanon::Find(ResolveClassId());
 	if (!Def)
 	{
 		return false;
@@ -494,6 +501,28 @@ void UPlayerClassData::PostLoad()
 	{
 		AsyncTask(ENamedThreads::GameThread, MarkDirtyOnGameThread);
 	}
+}
+
+void UPlayerClassData::PreSave(FObjectPreSaveContext ObjectSaveContext)
+{
+	Super::PreSave(ObjectSaveContext);
+
+	// Direct property writes never reach PostEditChangeProperty. Fill before serialization
+	// so the saved package contains the canon values. Skip worker-thread saves: canon names are FText.
+	if (!IsInGameThread() || IsTemplate() || HasAnyFlags(RF_Transient))
+	{
+		return;
+	}
+
+	const UPackage* Package = GetOutermost();
+	if (!Package
+		|| Package == GetTransientPackage()
+		|| Package->HasAnyPackageFlags(PKG_CompiledIn | PKG_PlayInEditor | PKG_ForDiffing))
+	{
+		return;
+	}
+
+	ApplyCanonDefaultsToEmptyFields();
 }
 
 void UPlayerClassData::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
