@@ -46,13 +46,47 @@ Auto-fill writes a field only when it is still empty or zero: DisplayName, flavo
 
 Soft-ref these three DAs. Bind the class title to `DisplayName` only. Bind cooldown wells to `AbilitySlots[n].AbilityTag` once Gary lands tags (slots 0–2 are canon abilities; slot 3 is reserved empty). Do not hardcode display names or stats in UMG if the DA is available.
 
+`UCombatClassSelectScreen` only broadcasts the pick. Confirm calls `OnClassSelected` with `ClassId` and the soft object path. It does not call `ApplyPlayerClassToAttributes`.
+
 Suggested future tag names (not registered here): `Ability.Class.VigilStep`, `Ability.Class.AshenRecitation`, `Ability.Class.EffigyVow`, `Ability.Class.CenserLunge`, `Ability.Class.CensureLance`, `Ability.Class.SecondBreath`, `Ability.Class.Fold`, `Ability.Class.Unwriting`, `Ability.Class.Palindrome`. Placeholder **Ability Id** values on the DA already match the demo (`vigil_step`, `fold`, …).
+
+## Runtime apply (`ACombatPlayerController`)
+
+The combat player controller owns the selection.
+
+1. **Pick.** When the class-select widget's owning player is an `ACombatPlayerController`, `NativeConstruct` binds `OnClassSelected` to `HandleClassSelected`. `NativeDestruct` removes that bind.
+2. **Resolve.** `HandleClassSelected` loads a `UPlayerClassData` from the broadcast path. If that path does not load one, and `UPlayerClassData::GetExpectedAssetPath(ClassId)` is a different valid path, it tries that path. A failed load logs a warning and leaves the stored class unchanged.
+3. **Store.** The loaded asset is kept on `SelectedPlayerClass` (`SetSelectedPlayerClass`). Passing null clears the stored class and does not rewrite attributes already on the pawn.
+4. **Apply now.** If a pawn is already possessed, `SetSelectedPlayerClass` applies immediately.
+5. **Apply on possess.** `OnPossess` calls the same apply after `Super`, so the respawn in `OnPawnDestroyed` (spawn, then `Possess`) gets the class again. `ACombatCharacter::PossessedBy` has already run `InitializeAbilitySystem` by then.
+6. **Where the numbers go.** Apply calls the existing `ACombatCharacter::ApplyPlayerClassToAttributes`. That copies `BaseHealth` (onto Health and MaxHealth), `BaseArmor`, `BaseMoveSpeed`, `BaseDamage`, `AttackCooldown`, `AttackRange`, and `CorruptionRate`. This controller does not duplicate that write.
+
+Null cases, all safe:
+
+| Situation | Result |
+| --- | --- |
+| No class stored yet | `OnPossess` does not write attributes. Constructor / ability-system defaults stay. |
+| Possessed pawn is not an `ACombatCharacter` | The pick stays stored. Attributes are not written. |
+| Combat pawn has no ability system component or no attribute set | The pick stays stored. Attributes are not written. A warning is logged. |
+| Broadcast does not load a `UPlayerClassData` | Stored class and current attributes stay as they were. |
+
+## In-editor wiring still needed
+
+No `.uasset` is created or edited by the controller hook.
+
+1. `WBP_CombatClassSelect` (parent `CombatClassSelectScreen`) still has to be authored in UMG if it is not already. Widget names: `Button_Ordo`, `Button_Ignivarum`, `Button_Luminarch`, optional `Button_Confirm`, optional `Text_SelectedClassName`. Suggested path `/Game/Variant_Combat/UI/WBP_CombatClassSelect`. The C++ base is abstract, so the screen cannot be spawned without this Blueprint child.
+2. Create that widget with the combat player controller as its owning player (`Create Widget`, Owning Player = the `ACombatPlayerController`, then add it to the player screen). `NativeConstruct` then binds `OnClassSelected` to `HandleClassSelected`. Do not also bind `OnClassSelected` in the widget Blueprint, or the class is applied twice.
+3. If the widget cannot be created with that owner, bind `OnClassSelected` in the widget Blueprint to `ACombatPlayerController::HandleClassSelected` and pass Class Id and Class Data Path through.
+4. The three `DA_PlayerClass_*` assets must exist at the object paths above. A missing asset does not change the pawn.
+5. Do not call `ApplyPlayerClassToAttributes` from UMG. `BP_CombatPlayerController` does not need an `OnPossess` override; the C++ parent applies the class. If a Blueprint override of `OnPossess` is added later, it has to call the parent.
 
 ## Units
 
 Isometric-demo combat numbers (`BaseHealth` 150–230, `BaseMoveSpeed` ~3.05–3.55, `AttackRange` ~1.15–6.4) are **not** Unreal centimetres / the current `ACombatCharacter` HP scale (demo MaxHP is 5). Convert when wiring movement, traces, and damage.
 
-## Out of scope (this PR)
+## Out of scope (original data-asset work)
+
+The list below is what the `UPlayerClassData` change did not include. The class-select broadcast and the controller apply are described above.
 
 - HUD / UMG (Priya)
 - GAS ability implementations and native tags (Gary)
