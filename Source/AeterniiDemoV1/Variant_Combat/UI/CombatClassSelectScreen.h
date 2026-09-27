@@ -119,6 +119,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category="Class Select", meta=(BindWidgetOptional))
 	TObjectPtr<UTextBlock> Text_SelectedClassName;
 
+	/** Confirm broadcast: ClassId and the soft class-data path. This screen does not apply attributes. */
 	UPROPERTY(BlueprintAssignable, Category="Class Select")
 	FOnCombatClassSelected OnClassSelected;
 
@@ -138,8 +139,11 @@ public:
 	void HighlightClass(FName ClassId);
 
 	/**
-	 *  Commits HighlightedClassId.
-	 *  TODO: call ACombatCharacter::ApplyPlayerClassToAttributes once DA_PlayerClass_* is loaded. Not this PR.
+	 *  Commits HighlightedClassId by broadcasting OnClassSelected.
+	 *  TODO(Cole): do not call ApplyPlayerClassToAttributes here.
+	 *  ACombatPlayerController stores the selection and calls
+	 *  ApplyPlayerClassToAttributes on the possessed ACombatCharacter in OnPossess
+	 *  (also covers respawns). Cole owns that controller hook. Not this PR.
 	 */
 	UFUNCTION(BlueprintCallable, Category="Class Select")
 	void ConfirmSelection();
