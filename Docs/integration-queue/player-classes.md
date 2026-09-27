@@ -26,9 +26,19 @@ Helpers: `UPlayerClassData::GetExpectedAssetPath(ClassId)`, `PlayerClassAsset::P
 
 ## Editor fill
 
+Empty canon fields fill on their own. Which hook runs depends on how Class Id was written:
+
+- **PostEditChangeProperty** — Class Id was changed from the Details panel or the editor property system.
+- **PreSave** — the asset is saved. Property writes that never notify the editor (some Unreal MCP setters) still hit this. A blank Class Id is resolved from the asset name through `ResolveClassId()` (`DA_PlayerClass_Ordo`, `DA_PlayerClass_Ignivarum`, `DA_PlayerClass_Luminarch`). The save writes the filled values.
+- **PostLoad** — the editor loads an asset that still has empty canon fields, including a canon asset name with a blank Class Id. The package is marked dirty so the fill can be saved.
+
+Auto-fill writes a field only when it is still empty or zero: DisplayName, flavor, combat numbers, each stat, ability slots when every slot is still empty, and Class Id when it is None. A Class Id that is already set stays as it is. Numeric 0 and empty text count as unset, so a saved 0 is filled again on the next editor load or save. Archetype and ranged are written only when the rest of that payload is still blank, because Bulwark / melee are valid values and have no separate empty sentinel.
+
+**Apply Canon Defaults From Editor** (and `ApplyCanonDefaults` / `ApplyCanonDefaultsForId`) is the full reset: it overwrites canon fields for the current ClassId, and it can still infer ClassId from a `DA_PlayerClass_*` asset name. Character Class, Preview Mesh, ability tags, and ability classes are left as they are.
+
 1. Create the DA at the path above.
-2. Set **Class Id** to `ordo` / `ignivarum` / `luminarch` (or name the asset `DA_PlayerClass_*` so it can be inferred).
-3. Click **Apply Canon Defaults From Editor** (or call `ApplyCanonDefaults` / `ApplyCanonDefaultsForId`).
+2. Set **Class Id** to `ordo` / `ignivarum` / `luminarch`, or leave it blank on a `DA_PlayerClass_*` asset and save. Empty fields fill on their own.
+3. Use **Apply Canon Defaults From Editor** when you want canon values to replace existing ones.
 4. Leave **Character Class** and **Preview Mesh** unset — Claude Code assigns the Combat character BP / mesh.
 5. Leave **Ability Tag** / **Ability Class** empty on each slot — Gary owns real tags.
 
