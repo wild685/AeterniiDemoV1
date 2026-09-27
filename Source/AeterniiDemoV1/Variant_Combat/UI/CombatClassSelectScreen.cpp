@@ -75,6 +75,9 @@ void UCombatClassSelectScreen::HighlightClass(FName ClassId)
 
 void UCombatClassSelectScreen::ConfirmSelection()
 {
+	// TODO(Cole): broadcast OnClassSelected only. ACombatPlayerController stores the selection
+	// and calls ApplyPlayerClassToAttributes on the possessed ACombatCharacter in OnPossess
+	// (also covers respawns). Cole owns that controller hook. Not this PR.
 	if (HighlightedClassId.IsNone())
 	{
 		return;

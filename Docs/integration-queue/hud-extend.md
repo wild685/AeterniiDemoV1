@@ -1,19 +1,20 @@
 # Combat HUD + class-select — integration queue
 
-Priya's C++ `UUserWidget` bases for the Combat variant. **This PR does not contain any `.uasset` / `.umap` / `.umeta` / StateTree-graph assets.** Claude Code authors the UMG widgets; Beck assigns icons; Gary fills remaining GAS binds.
+Priya's C++ `UUserWidget` bases for the Combat variant. **This PR does not contain any `.uasset` / `.umap` / `.umeta` / StateTree-graph assets.** Claude Code authors the UMG widgets; Beck assigns icons. Corruption is bound in C++ (see below). Cooldown tags are still placeholders.
 
 World-space life bars stay `UCombatLifeBar` on `ACombatCharacter` / `ACombatEnemy` `WidgetComponent`s. The screen HUD **extends** that type — do not rip those components out or invent a second health API.
 
-## GAS binds (after PR #1)
+## GAS binds
 
-PR #1 landed **`UCombatAttributeSet`** with **Health, MaxHealth, Stamina, MaxStamina**. There is no `UAeterniiAttributeSet`.
+PR #1 landed **`UCombatAttributeSet`** (Health, MaxHealth, Stamina, MaxStamina) for legacy boss life. PR #6 landed **`UAeterniiAttributeSet`**, which also has Health / MaxHealth (isometric hp) plus Corruption / MaxCorruption and Depth. The screen life meter stays on **`UCombatAttributeSet`**.
 
 | Surface | Bind |
 | --- | --- |
-| Life / health | **`UCombatAttributeSet` Health / MaxHealth** via `SetLifeFromAttributeSet` (or `SetLifePercentage` from `OnHealthChanged`) |
-| Stamina | Present on the set (dodge stub). **No HUD stamina meter** — do not invent one |
-| Corruption | **Unbound stub.** Not on `UCombatAttributeSet`. Wait for Gary to add the attribute; do not invent a name. `SetCorruptionPercentage` / `SetCorruptionFromCurrentMax` stay no-ops until then |
-| Ability cooldowns | Placeholder tags until Gary's class ability tags land |
+| Life / health | **`UCombatAttributeSet` Health / MaxHealth** via `SetLifeFromAttributeSet` (or `SetLifePercentage` from `OnHealthChanged`). Do not point LifeMeter at `UAeterniiAttributeSet::Health` |
+| Stamina | Present on `UCombatAttributeSet` (dodge stub). **No HUD stamina meter** — do not invent one |
+| Corruption | **`UAeterniiAttributeSet` Corruption / MaxCorruption** via `OnCorruptionChanged`. See [Corruption bind](#corruption-bind) |
+| Depth | **`UAeterniiAttributeSet` Depth** (0–3) via `OnDepthChanged`. Read-only `Depth` int on the HUD. No depth widget |
+| Ability cooldowns | Placeholder tags `Ability.HUD.Cooldown.Slot0`–`Slot3` until class ability tags land. This bind does not change them |
 
 ## New C++ classes
 
@@ -35,10 +36,10 @@ All binds are `BindWidgetOptional`. Missing widgets do not fail construct; C++ n
 | Widget name | Type | Role |
 | --- | --- | --- |
 | `LifeMeter` | `ProgressBar` | Screen health fill — `UCombatAttributeSet` Health / MaxHealth |
-| `CorruptionMeter` | `ProgressBar` | Unbound stub (`SetCorruptionPercentage`). Not on `UCombatAttributeSet` yet |
+| `CorruptionMeter` | `ProgressBar` | `UAeterniiAttributeSet` Corruption / MaxCorruption (`SetCorruptionPercentage`) |
 | `AbilitySlot_0` … `AbilitySlot_3` | `CombatAbilityCooldownSlot` (or WBP child) | Four ability wells |
 
-C++ accessors: `SetLifePercentage`, `SetBarColor`, `SetLifeFromAttributeSet`, `SetCorruptionPercentage`, `SetCorruptionBarColor`, `SetCorruptionFromCurrentMax`, `SetAbilityCooldown(SlotIndex, TimeRemaining, Duration)`, `SetAbilityCooldownTag`.
+C++ accessors: `SetLifePercentage`, `SetBarColor`, `SetLifeFromAttributeSet`, `SetCorruptionPercentage`, `SetCorruptionBarColor`, `SetCorruptionFromCurrentMax`, `SetCorruptionFromAttributeSet`, `BindToAbilitySystem`, `SetAbilityCooldown(SlotIndex, TimeRemaining, Duration)`, `SetAbilityCooldownTag`. `Depth` is BlueprintReadOnly. `OnDepthChanged(DepthIndex)` is a BlueprintImplementableEvent.
 
 ### `WBP_CombatAbilityCooldownSlot` (parent `CombatAbilityCooldownSlot`)
 
@@ -80,15 +81,34 @@ Helpers: `CombatClassSelectPaths::*`, `CombatClassSelectIds::*`. Soft-refs stay 
 
 1. `WBP_CombatLifeBar` — keep / continue using the existing world-space life bar (parent `CombatLifeBar`) on character and enemy WidgetComponents. Drive from `SetLifeFromAttributeSet` / `SetLifePercentage` as today (`ACombatCharacter::HandleGASHealthChanged` already calls `SetLifePercentage`).
 2. `WBP_CombatAbilityCooldownSlot` — parent `CombatAbilityCooldownSlot`; bind the three optional names; leave `IconTexture` for Beck.
-3. `WBP_CombatHUD` — parent `CombatHUD`; bind `LifeMeter`, `CorruptionMeter` (layout only until Gary adds the attribute), four `AbilitySlot_*`. Suggested Content path: `/Game/Variant_Combat/UI/WBP_CombatHUD`. Add to player screen from `ACombatPlayerController` (same `CreateWidget` + `AddToPlayerScreen` pattern as mobile controls) — not wired in this C++ PR.
+3. `WBP_CombatHUD` — parent `CombatHUD`; bind `LifeMeter`, `CorruptionMeter`, four `AbilitySlot_*`. Suggested Content path: `/Game/Variant_Combat/UI/WBP_CombatHUD`. After the widget is constructed, call `BindToAbilitySystem` or `SetCorruptionFromAttributeSet` (see below). Add to player screen from `ACombatPlayerController` (same `CreateWidget` + `AddToPlayerScreen` pattern as mobile controls) — spawn is not wired in C++.
 4. `WBP_CombatClassSelect` — parent `CombatClassSelectScreen`; three class buttons + optional confirm; selected name text only. Suggested path: `/Game/Variant_Combat/UI/WBP_CombatClassSelect`.
 5. Cole's three `UPlayerClassData` DAs at the paths above (PR #4) — not this HUD PR.
 
+## Corruption bind
+
+`UCombatHUD` subscribes to **`UAeterniiAttributeSet::OnCorruptionChanged`** (`FOnAeterniiCorruptionChanged`: `NewCorruption`, `NewMaxCorruption`) and **`UAeterniiAttributeSet::OnDepthChanged`** (`FOnAeterniiDepthChanged`: `NewDepth`). The bind also reads current values immediately. `NativeDestruct` removes both delegates.
+
+After `WBP_CombatHUD` is constructed (and the pawn exists), the Blueprint calls:
+
+1. `SetCorruptionFromAttributeSet(CombatCharacter->GetAeterniiAttributeSet())` — `GetAeterniiAttributeSet` is `BlueprintPure`. This is the call the HUD widget should make.
+2. `BindToAbilitySystem(AbilitySystemComponent)` — same subscription when the ability system component is already in hand. Resolves the set with `GetSet<UAeterniiAttributeSet>()`, then the owner's default subobject named `AttributeSet` (player) or `AeterniiAttributeSet` (enemy).
+
+Either path writes `CorruptionMeter` through `SetCorruptionPercentage` (`Corruption / MaxCorruption`, or 0 when max is <= 0). `SetCorruptionPercentage` and `SetCorruptionFromCurrentMax` still work for a manual push.
+
+**Depth.** `Depth` is a BlueprintReadOnly int, stratum index **0–3** (same clamp as `UAeterniiAttributeSet::GetDepthIndex`). `OnDepthChanged(DepthIndex)` is a BlueprintImplementableEvent fired on bind and whenever `OnDepthChanged` broadcasts. There is no depth progress-bar widget; UMG can implement the event later.
+
+**Life.** `LifeMeter` stays on **`UCombatAttributeSet` Health / MaxHealth** via `SetLifeFromAttributeSet`. `UAeterniiAttributeSet::Health` is the isometric hp field and is not this meter.
+
+**Class select.** `UCombatClassSelectScreen` only broadcasts the pick (`OnClassHighlighted` while browsing, `OnClassSelected` on confirm: `ClassId` and the soft class-data path). It does not call `ApplyPlayerClassToAttributes`. TODO(Cole): `ACombatPlayerController` stores the selection and calls `ApplyPlayerClassToAttributes` on the possessed `ACombatCharacter` in `OnPossess` (also covers respawns). That controller hook is Cole's follow-up, not this PR.
+
+**Cooldowns.** Placeholder tags `Ability.HUD.Cooldown.Slot0`–`Slot3` are unchanged.
+
 ## Gary — remaining binds
 
-**Health (done on the C++ side).** Call `SetLifeFromAttributeSet(AttributeSet)` or `SetLifePercentage(Health / MaxHealth)` from `UCombatAttributeSet::OnHealthChanged`. World-space bars already do this from `ACombatCharacter` / `ACombatBoss`.
+**Health (done on the C++ side).** Call `SetLifeFromAttributeSet(AttributeSet)` or `SetLifePercentage(Health / MaxHealth)` from `UCombatAttributeSet::OnHealthChanged`. World-space bars already do this from `ACombatCharacter` / `ACombatBoss`. Screen life stays on that legacy set even though `UAeterniiAttributeSet` also has Health / MaxHealth.
 
-**Corruption (wait).** `CorruptionMeter` / `SetCorruptionPercentage` are stubs. **Corruption is not in `UCombatAttributeSet`.** Do not invent an attribute name in UMG. When Gary adds it to that set (or a later set), wire current/max through `SetCorruptionFromCurrentMax`.
+**Corruption (done on the C++ side).** Call `BindToAbilitySystem` or `SetCorruptionFromAttributeSet` from the HUD Blueprint. Attributes are `UAeterniiAttributeSet::Corruption` and `MaxCorruption`. Delegate is `OnCorruptionChanged`.
 
 **Ability cooldowns (wait).** Four wells, indices 0–3 (slot 3 reserved empty on the class DA). Placeholder names (not registered tags):
 
