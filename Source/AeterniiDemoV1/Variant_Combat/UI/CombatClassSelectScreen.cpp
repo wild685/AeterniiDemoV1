@@ -75,6 +75,7 @@ void UCombatClassSelectScreen::HighlightClass(FName ClassId)
 
 void UCombatClassSelectScreen::ConfirmSelection()
 {
+	// TODO: ACombatCharacter::ApplyPlayerClassToAttributes — wire when DA_PlayerClass_* assets load. Not this PR.
 	if (HighlightedClassId.IsNone())
 	{
 		return;

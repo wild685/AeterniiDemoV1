@@ -2,8 +2,50 @@
 
 
 #include "CombatHUD.h"
+#include "AbilitySystemComponent.h"
+#include "AeterniiAttributeSet.h"
 #include "CombatAbilityCooldownSlot.h"
 #include "Components/ProgressBar.h"
+
+namespace
+{
+	UAeterniiAttributeSet* FindAeterniiAttributeSet(UAbilitySystemComponent* InAbilitySystem)
+	{
+		if (!IsValid(InAbilitySystem))
+		{
+			return nullptr;
+		}
+
+		// GetSet is const-only. The set itself is not const.
+		if (const UAeterniiAttributeSet* FromASC = InAbilitySystem->GetSet<UAeterniiAttributeSet>())
+		{
+			return const_cast<UAeterniiAttributeSet*>(FromASC);
+		}
+
+		// CreateDefaultSubobject sets are not always listed in SpawnedAttributes.
+		// ACombatCharacter names its set AttributeSet. ACombatEnemy names it AeterniiAttributeSet.
+		AActor* Actor = InAbilitySystem->GetOwner();
+		if (!IsValid(Actor))
+		{
+			return nullptr;
+		}
+
+		static const FName SubobjectNames[] = {
+			TEXT("AttributeSet"),
+			TEXT("AeterniiAttributeSet")
+		};
+
+		for (const FName& SubobjectName : SubobjectNames)
+		{
+			if (UAeterniiAttributeSet* Set = Cast<UAeterniiAttributeSet>(Actor->GetDefaultSubobjectByName(SubobjectName)))
+			{
+				return Set;
+			}
+		}
+
+		return nullptr;
+	}
+}
 
 UCombatHUD::UCombatHUD()
 {
@@ -32,7 +74,6 @@ void UCombatHUD::SetBarColor_Implementation(FLinearColor Color)
 
 void UCombatHUD::SetCorruptionPercentage_Implementation(float Percent)
 {
-	// Unbound stub: UCombatAttributeSet has no corruption attribute yet.
 	if (CorruptionMeter)
 	{
 		CorruptionMeter->SetPercent(FMath::Clamp(Percent, 0.0f, 1.0f));
@@ -51,6 +92,64 @@ void UCombatHUD::SetCorruptionFromCurrentMax(float Current, float MaxValue)
 {
 	const float Percent = (MaxValue > 0.0f) ? (Current / MaxValue) : 0.0f;
 	SetCorruptionPercentage(Percent);
+}
+
+void UCombatHUD::SetCorruptionFromAttributeSet(UAeterniiAttributeSet* InAttributeSet)
+{
+	if (!IsValid(InAttributeSet))
+	{
+		UnbindAeterniiAttributes();
+		Depth = 0;
+		SetCorruptionPercentage(0.0f);
+		return;
+	}
+
+	if (BoundAeterniiAttributes.Get() != InAttributeSet)
+	{
+		UnbindAeterniiAttributes();
+		BoundAeterniiAttributes = InAttributeSet;
+		InAttributeSet->OnCorruptionChanged.AddDynamic(this, &UCombatHUD::HandleAeterniiCorruptionChanged);
+		InAttributeSet->OnDepthChanged.AddDynamic(this, &UCombatHUD::HandleAeterniiDepthChanged);
+	}
+
+	SetCorruptionFromCurrentMax(InAttributeSet->GetCorruption(), InAttributeSet->GetMaxCorruption());
+	ApplyDepthIndex(InAttributeSet->GetDepthIndex());
+}
+
+void UCombatHUD::BindToAbilitySystem(UAbilitySystemComponent* InAbilitySystem)
+{
+	SetCorruptionFromAttributeSet(FindAeterniiAttributeSet(InAbilitySystem));
+}
+
+void UCombatHUD::HandleAeterniiCorruptionChanged(float NewCorruption, float NewMaxCorruption)
+{
+	SetCorruptionFromCurrentMax(NewCorruption, NewMaxCorruption);
+}
+
+void UCombatHUD::HandleAeterniiDepthChanged(float NewDepth)
+{
+	const int32 Index = FMath::Clamp(
+		FMath::RoundToInt(NewDepth),
+		0,
+		AeterniiCorruptionMeter::StratumCount - 1);
+	ApplyDepthIndex(Index);
+}
+
+void UCombatHUD::UnbindAeterniiAttributes()
+{
+	if (UAeterniiAttributeSet* Set = BoundAeterniiAttributes.Get())
+	{
+		Set->OnCorruptionChanged.RemoveDynamic(this, &UCombatHUD::HandleAeterniiCorruptionChanged);
+		Set->OnDepthChanged.RemoveDynamic(this, &UCombatHUD::HandleAeterniiDepthChanged);
+	}
+
+	BoundAeterniiAttributes.Reset();
+}
+
+void UCombatHUD::ApplyDepthIndex(int32 Index)
+{
+	Depth = Index;
+	OnDepthChanged(Index);
 }
 
 void UCombatHUD::SetAbilityCooldown(int32 SlotIndex, float TimeRemaining, float Duration)
@@ -121,6 +220,12 @@ void UCombatHUD::NativeConstruct()
 {
 	Super::NativeConstruct();
 	InitializeAbilitySlots();
+}
+
+void UCombatHUD::NativeDestruct()
+{
+	UnbindAeterniiAttributes();
+	Super::NativeDestruct();
 }
 
 void UCombatHUD::InitializeAbilitySlots()

@@ -137,6 +137,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Class Select")
 	void HighlightClass(FName ClassId);
 
+	/**
+	 *  Commits HighlightedClassId.
+	 *  TODO: call ACombatCharacter::ApplyPlayerClassToAttributes once DA_PlayerClass_* is loaded. Not this PR.
+	 */
 	UFUNCTION(BlueprintCallable, Category="Class Select")
 	void ConfirmSelection();
 

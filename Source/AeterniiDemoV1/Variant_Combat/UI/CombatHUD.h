@@ -8,6 +8,8 @@
 #include "GameplayTagContainer.h"
 #include "CombatHUD.generated.h"
 
+class UAbilitySystemComponent;
+class UAeterniiAttributeSet;
 class UProgressBar;
 
 /**
@@ -40,8 +42,13 @@ namespace CombatHUDCooldownTags
 
 /**
  *  Screen-space combat HUD. Extends UCombatLifeBar so health still uses
- *  SetLifePercentage / SetBarColor, now also SetLifeFromAttributeSet
+ *  SetLifePercentage / SetBarColor and SetLifeFromAttributeSet
  *  (UCombatAttributeSet Health / MaxHealth).
+ *
+ *  UAeterniiAttributeSet also has Health / MaxHealth (isometric hp). Life
+ *  stays on UCombatAttributeSet. Corruption / MaxCorruption and Depth bind
+ *  to UAeterniiAttributeSet via SetCorruptionFromAttributeSet or
+ *  BindToAbilitySystem.
  *
  *  Claude Code: WBP parent this class. Bind optional widgets listed in
  *  Docs/integration-queue/hud-extend.md. Do not replace the character
@@ -50,9 +57,7 @@ namespace CombatHUDCooldownTags
  *  Stamina exists on UCombatAttributeSet (dodge stub) but this HUD has no
  *  stamina meter — do not add one here.
  *
- *  Corruption is an unbound stub: UCombatAttributeSet has Health / MaxHealth /
- *  Stamina / MaxStamina only. Wait for Gary to add a corruption attribute;
- *  do not invent a name. Cooldown tags also wait on Gary.
+ *  Cooldown tags stay placeholders until class ability tags exist.
  */
 UCLASS(abstract)
 class UCombatHUD : public UCombatLifeBar
@@ -67,21 +72,26 @@ public:
 
 	/**
 	 *  Optional screen life fill. Name this widget LifeMeter in UMG.
-	 *  Bind to UCombatAttributeSet Health / MaxHealth via SetLifeFromAttributeSet
-	 *  (or SetLifePercentage from OnHealthChanged).
+	 *  Life stays on UCombatAttributeSet Health / MaxHealth via
+	 *  SetLifeFromAttributeSet. UAeterniiAttributeSet also has Health /
+	 *  MaxHealth; do not retarget this meter to that set.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category="HUD|Life", meta=(BindWidgetOptional))
 	TObjectPtr<UProgressBar> LifeMeter;
 
 	/**
-	 *  Unbound corruption stub. Name this widget CorruptionMeter in UMG.
-	 *
-	 *  TODO(Gary): UCombatAttributeSet has no corruption attribute yet
-	 *  (Health / MaxHealth / Stamina / MaxStamina only). Leave this meter
-	 *  unbound until that attribute is added — do not invent a name.
+	 *  Corruption fill. Name this widget CorruptionMeter in UMG.
+	 *  Driven by UAeterniiAttributeSet Corruption / MaxCorruption.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category="HUD|Corruption", meta=(BindWidgetOptional))
 	TObjectPtr<UProgressBar> CorruptionMeter;
+
+	/**
+	 *  Stratum index 0–3 from UAeterniiAttributeSet::Depth
+	 *  (Lux, Velum, Abyssii, Ruptura). No depth meter widget.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category="HUD|Depth")
+	int32 Depth = 0;
 
 	/** Ability wells 0-3. Name widgets AbilitySlot_0 .. AbilitySlot_3 in UMG. */
 	UPROPERTY(BlueprintReadOnly, Category="HUD|Abilities", meta=(BindWidgetOptional))
@@ -106,20 +116,36 @@ public:
 	virtual void SetLifePercentage_Implementation(float Percent) override;
 	virtual void SetBarColor_Implementation(FLinearColor Color) override;
 
-	/** 0-1 corruption stub. Not wired to UCombatAttributeSet. */
+	/** 0-1 fill for CorruptionMeter. Bind paths call this after reading the attribute. */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="HUD|Corruption")
 	void SetCorruptionPercentage(float Percent);
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="HUD|Corruption")
 	void SetCorruptionBarColor(FLinearColor Color);
 
-	/**
-	 *  Current/max helper for a future corruption attribute on
-	 *  UCombatAttributeSet. Does not name that attribute — it is not in
-	 *  the set yet.
-	 */
+	/** Current/max helper. MaxValue <= 0 clears the meter. */
 	UFUNCTION(BlueprintCallable, Category="HUD|Corruption")
 	void SetCorruptionFromCurrentMax(float Current, float MaxValue);
+
+	/**
+	 *  Subscribe to InAttributeSet->OnCorruptionChanged and OnDepthChanged,
+	 *  then read Corruption / MaxCorruption and Depth. Replaces any previous
+	 *  bind. Null unbinds and clears the meter.
+	 */
+	UFUNCTION(BlueprintCallable, Category="HUD|Corruption")
+	void SetCorruptionFromAttributeSet(UAeterniiAttributeSet* InAttributeSet);
+
+	/**
+	 *  Resolve UAeterniiAttributeSet from InAbilitySystem (GetSet, then the
+	 *  owner's AttributeSet / AeterniiAttributeSet subobject) and call
+	 *  SetCorruptionFromAttributeSet.
+	 */
+	UFUNCTION(BlueprintCallable, Category="HUD|Corruption")
+	void BindToAbilitySystem(UAbilitySystemComponent* InAbilitySystem);
+
+	/** Fired when Depth changes, including the initial read on bind. */
+	UFUNCTION(BlueprintImplementableEvent, Category="HUD|Depth")
+	void OnDepthChanged(int32 DepthIndex);
 
 	UFUNCTION(BlueprintCallable, Category="HUD|Abilities")
 	void SetAbilityCooldown(int32 SlotIndex, float TimeRemaining, float Duration);
@@ -140,6 +166,17 @@ protected:
 
 	virtual void NativePreConstruct() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+
+	UFUNCTION()
+	void HandleAeterniiCorruptionChanged(float NewCorruption, float NewMaxCorruption);
+
+	UFUNCTION()
+	void HandleAeterniiDepthChanged(float NewDepth);
 
 	void InitializeAbilitySlots();
+	void UnbindAeterniiAttributes();
+	void ApplyDepthIndex(int32 Index);
+
+	TWeakObjectPtr<UAeterniiAttributeSet> BoundAeterniiAttributes;
 };
