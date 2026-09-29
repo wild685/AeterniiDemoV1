@@ -1,5 +1,6 @@
 # Integration queue — Phase 2 Noetic Arts (GAS)
 
+**PR:** https://github.com/wild685/AeterniiDemoV1/pull/10 (`feature/noetic-arts-gas`)
 **Status: blocked on Jacob.** No `UGameplayAbility` subclasses were added.
 
 Trigger, cooldown, effect, and cost do not agree between the two HTML demos for any of the four locked arts. This ticket records both sides. It does not blend them and it does not pick a winner.
