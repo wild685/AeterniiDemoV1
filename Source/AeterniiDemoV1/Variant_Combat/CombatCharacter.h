@@ -8,6 +8,7 @@
 #include "CombatAttacker.h"
 #include "CombatDamageable.h"
 #include "Animation/AnimInstance.h"
+#include "NoeticArtKits.h"
 #include "CombatCharacter.generated.h"
 
 class USpringArmComponent;
@@ -96,6 +97,19 @@ protected:
 	/** Dodge Input Action. Create IA_Dodge and assign it on BP_CombatCharacter; see Docs/CombatP1.md. */
 	UPROPERTY(EditAnywhere, Category ="Input")
 	UInputAction* DodgeAction;
+
+	/**
+	 *  Noetic slot keys from the isometric HUD: slot 0 is 1/Q, slot 1 is 2/E, slot 2 is 3/R.
+	 *  Leave unset until IA_NoeticSlot1/2/3 exist. UI can call DoNoeticSlot without them.
+	 */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* NoeticSlot1Action;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* NoeticSlot2Action;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* NoeticSlot3Action;
 
 	/** Projectile class spawned by the basic magic cast */
 	UPROPERTY(EditAnywhere, Category="Magic")
@@ -227,9 +241,20 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category="GAS", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAeterniiAttributeSet> AttributeSet;
 
-	/** Granted on possess. Empty defaults to GA_Dodge. */
+	/** Granted on possess. Empty defaults to GA_Dodge. The four Noetic Arts are always added. */
 	UPROPERTY(EditDefaultsOnly, Category="GAS")
 	TArray<TSubclassOf<UGameplayAbility>> DefaultAbilities;
+
+	/**
+	 *  Isometric demo units to centimeters. The HTML files do not define this scale.
+	 *  1 keeps ABIL ranges numerically unchanged (3.4 demo units = 3.4 cm).
+	 */
+	UPROPERTY(EditDefaultsOnly, Category="GAS|Noetic", meta=(ClampMin="0.01"))
+	float DemoUnitsToCentimeters = 1.0f;
+
+	/** ClassId last passed to ApplyPlayerClassToAttributes. Kits resolve from this. */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category="GAS", meta=(AllowPrivateAccess="true"))
+	FName AppliedPlayerClassId;
 
 	bool bDefaultAbilitiesGranted = false;
 	bool bAeterniiAttributesInitialized = false;
@@ -315,6 +340,25 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoDodge();
+
+	/**
+	 *  Isometric HUD slot 0, 1, or 2 (keys 1/Q, 2/E, 3/R).
+	 *  Activates the class kit in that slot. A class with no kit in the slot does nothing.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoNoeticSlot(int32 SlotIndex);
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoExistenceShift();
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoMemoryBurn();
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoTemporalEcho();
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoAetherBlight();
 
 protected:
 
@@ -417,9 +461,16 @@ protected:
 
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_Controller() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void InitializeAbilitySystem();
 	void GrantDefaultAbilities();
+	void SamplePalindromeHistory(float DeltaSeconds);
+	void ActivateNoeticArt(ENoeticCanonArt Art);
+	void NoeticSlot1Pressed();
+	void NoeticSlot2Pressed();
+	void NoeticSlot3Pressed();
+	void ClearSecondBreathMoveMultiplier();
 
 public:
 
@@ -444,4 +495,24 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="GAS")
 	bool HasDodgeIFrames() const;
+
+	UFUNCTION(BlueprintPure, Category="GAS|Noetic")
+	float GetDemoUnitsToCentimeters() const { return DemoUnitsToCentimeters; }
+
+	UFUNCTION(BlueprintPure, Category="GAS|Noetic")
+	FName GetAppliedPlayerClassId() const { return AppliedPlayerClassId; }
+
+	/** Newest sample, replaced by the first sample at least 3s old. False when history is empty. */
+	bool FindPalindromeSample(FNoeticPalindromeSample& OutSample) const;
+
+	/** Second Breath speed 1.45 on MaxWalkSpeed for Duration seconds. Attribute MoveSpeed is a separate GE. */
+	void ApplySecondBreathMoveMultiplier(float Multiplier, float Duration);
+
+private:
+
+	TArray<FNoeticPalindromeSample> PalindromeHistory;
+	float PalindromeSampleAccumulator = 0.0f;
+	FTimerHandle SecondBreathMoveTimer;
+	float SecondBreathBaseWalkSpeed = 0.0f;
+	bool bSecondBreathMoveActive = false;
 };

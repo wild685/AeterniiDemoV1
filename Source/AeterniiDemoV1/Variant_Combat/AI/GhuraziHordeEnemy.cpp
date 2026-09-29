@@ -2,6 +2,7 @@
 
 
 #include "GhuraziHordeEnemy.h"
+#include "NoeticEffigy.h"
 #include "CombatDamageable.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -355,7 +356,14 @@ void AGhuraziHordeEnemy::ApplyChantStrike()
 		for (const FOverlapResult& Overlap : Overlaps)
 		{
 			AActor* HitActor = Overlap.GetActor();
-			if (!HitActor || !HitActor->ActorHasTag(FName("Player")))
+			if (!HitActor)
+			{
+				continue;
+			}
+
+			const bool bHitPlayer = HitActor->ActorHasTag(FName("Player"));
+			const bool bHitEffigy = HitActor->IsA(ANoeticEffigy::StaticClass());
+			if (!bHitPlayer && !bHitEffigy)
 			{
 				continue;
 			}

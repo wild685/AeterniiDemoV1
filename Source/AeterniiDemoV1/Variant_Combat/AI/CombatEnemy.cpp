@@ -2,6 +2,7 @@
 
 
 #include "CombatEnemy.h"
+#include "NoeticEffigy.h"
 #include "AeterniiAttributeSet.h"
 #include "AbilitySystemComponent.h"
 #include "CombatAbilitySystemComponent.h"
@@ -177,11 +178,19 @@ void ACombatEnemy::DoAttackTrace(FName DamageSourceBone)
 		// iterate over each object hit
 		for (const FHitResult& CurrentHit : OutHits)
 		{
-			/** does the actor have the player tag? */
-			if (CurrentHit.GetActor()->ActorHasTag(FName("Player")))
+			AActor* HitActor = CurrentHit.GetActor();
+			if (!HitActor)
+			{
+				continue;
+			}
+
+			// Player tag, or the Aether Blight decoy (it is not tagged Player).
+			const bool bHitPlayer = HitActor->ActorHasTag(FName("Player"));
+			const bool bHitEffigy = HitActor->IsA(ANoeticEffigy::StaticClass());
+			if (bHitPlayer || bHitEffigy)
 			{
 				// check if the actor is damageable
-				ICombatDamageable* Damageable = Cast<ICombatDamageable>(CurrentHit.GetActor());
+				ICombatDamageable* Damageable = Cast<ICombatDamageable>(HitActor);
 
 				if (Damageable)
 				{
@@ -286,6 +295,49 @@ void ACombatEnemy::HandleDeath()
 void ACombatEnemy::ApplyHealing(float Healing, AActor* Healer)
 {
 	// stub
+}
+
+void ACombatEnemy::ApplyNoeticSlow(float Duration, float SlowAmount)
+{
+	const float NewMultiplier = 1.0f - SlowAmount;
+	if (NewMultiplier <= 0.0f || Duration <= 0.0f)
+	{
+		return;
+	}
+
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (!Movement)
+	{
+		return;
+	}
+
+	if (!bNoeticSlowActive)
+	{
+		Movement->MaxWalkSpeed *= NewMultiplier;
+		bNoeticSlowActive = true;
+	}
+	NoeticSlowMultiplier = NewMultiplier;
+
+	GetWorldTimerManager().SetTimer(NoeticSlowTimer, this, &ACombatEnemy::ClearNoeticSlow, Duration, false);
+}
+
+void ACombatEnemy::ClearNoeticSlow()
+{
+	if (bNoeticSlowActive && NoeticSlowMultiplier > KINDA_SMALL_NUMBER)
+	{
+		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+		{
+			Movement->MaxWalkSpeed /= NoeticSlowMultiplier;
+		}
+	}
+
+	bNoeticSlowActive = false;
+	NoeticSlowMultiplier = 1.0f;
+}
+
+float ACombatEnemy::GetNoeticSlowMultiplier() const
+{
+	return bNoeticSlowActive ? NoeticSlowMultiplier : 1.0f;
 }
 
 void ACombatEnemy::NotifyDanger(const FVector& DangerLocation, AActor* DangerSource)
@@ -408,4 +460,5 @@ void ACombatEnemy::EndPlay(EEndPlayReason::Type EndPlayReason)
 
 	// clear the death timer
 	GetWorld()->GetTimerManager().ClearTimer(DeathTimer);
+	GetWorld()->GetTimerManager().ClearTimer(NoeticSlowTimer);
 }

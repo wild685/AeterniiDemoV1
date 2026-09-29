@@ -44,13 +44,9 @@ public:
 	TSoftObjectPtr<UTexture2D> IconTexture;
 
 	/**
-	 *  TODO(Gary): replace with the real GAS cooldown Gameplay Tag from
-	 *  UPlayerClassData::AbilitySlots[n].AbilityTag once PR #4 + ability
-	 *  implementations land. Suggested (not registered) names:
-	 *  Ability.Class.VigilStep, Ability.Class.AshenRecitation,
-	 *  Ability.Class.EffigyVow, Ability.Class.CenserLunge,
-	 *  Ability.Class.CensureLance, Ability.Class.SecondBreath,
-	 *  Ability.Class.Fold, Ability.Class.Unwriting, Ability.Class.Palindrome.
+	 *  Bind this to UPlayerClassData::AbilitySlots[n].AbilityTag.
+	 *  Registered kit tags: Cooldown.Noetic.VigilStep, AshenRecitation, EffigyVow,
+	 *  CenserLunge, CensureLance, SecondBreath, Fold, Unwriting, Palindrome.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cooldown Slot")
 	FGameplayTag CooldownTag;

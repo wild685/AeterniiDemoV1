@@ -233,6 +233,14 @@ public:
 	/** Allows the enemy to react to incoming attacks */
 	virtual void NotifyDanger(const FVector& DangerLocation, AActor* DangerSource) override;
 
+	/**
+	 *  Ashen Recitation slow. Speed is multiplied by (1 - SlowAmount) for Duration seconds.
+	 *  SlowAmount 0.45 matches the isometric f.slow.amt.
+	 */
+	void ApplyNoeticSlow(float Duration, float SlowAmount);
+
+	float GetNoeticSlowMultiplier() const;
+
 	// ~end ICombatDamageable interface
 
 protected:
@@ -261,6 +269,12 @@ protected:
 
 	/** EndPlay cleanup */
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
+
+	void ClearNoeticSlow();
+
+	FTimerHandle NoeticSlowTimer;
+	float NoeticSlowMultiplier = 1.0f;
+	bool bNoeticSlowActive = false;
 
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_Controller() override;

@@ -223,6 +223,20 @@ public:
 	static float CorruptionAfterUnmake(float CurrentCorruption, int32 DepthIndex);
 
 	/**
+	 *  Isometric palindrome write: max(0, min(CurrentCorruption, RecordedCorruption) - Drop).
+	 *  Drop is the kit constant 14. Not AddCorruption (no CorruptionRate) and not the unmake refund of 1.
+	 */
+	UFUNCTION(BlueprintPure, Category="Aeternii|Corruption")
+	static float CorruptionAfterPalindrome(float CurrentCorruption, float RecordedCorruption, float Drop);
+
+	/**
+	 *  Second Breath purge decay only. Calls AdvancePassiveCorruption with passive input 0 and bPurge.
+	 *  Does not add the stratum's passive corruption.
+	 */
+	UFUNCTION(BlueprintCallable, Category="Aeternii|Corruption")
+	float ApplyPurgeDecay(float DeltaSeconds);
+
+	/**
 	 *  Isometric depth scan. Thresholds are 0, 0.20, 0.46, 0.74.
 	 *  Returns 0 when progress is below the first threshold.
 	 */

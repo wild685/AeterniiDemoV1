@@ -200,6 +200,19 @@ float UAeterniiAttributeSet::CorruptionAfterUnmake(float CurrentCorruption, int3
 	return CurrentCorruption;
 }
 
+float UAeterniiAttributeSet::CorruptionAfterPalindrome(float CurrentCorruption, float RecordedCorruption, float Drop)
+{
+	return FMath::Max(0.0f, FMath::Min(CurrentCorruption, RecordedCorruption) - Drop);
+}
+
+float UAeterniiAttributeSet::ApplyPurgeDecay(float DeltaSeconds)
+{
+	const float Next = AdvancePassiveCorruption(GetCorruption(), 0.0f, DeltaSeconds, GetCorruptionRate(), true);
+	SetCorruption(Next);
+	BroadcastCorruption();
+	return Next;
+}
+
 int32 UAeterniiAttributeSet::DepthIndexFromProgress(float Progress)
 {
 	int32 Index = 0;
