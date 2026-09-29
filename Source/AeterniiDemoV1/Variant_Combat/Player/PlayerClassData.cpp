@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "PlayerClassData.h"
+#include "CombatGameplayTags.h"
 #include "Misc/PackageName.h"
 
 #if WITH_EDITOR
@@ -17,7 +18,14 @@ namespace PlayerClassCanon
 	{
 		FName Id;
 		FText DisplayName;
+		FGameplayTag AbilityTag;
+		FSoftClassPath AbilityClass;
 	};
+
+	static FSoftClassPath NoeticAbilityClass(const TCHAR* NativeClassName)
+	{
+		return FSoftClassPath(FString::Printf(TEXT("/Script/AeterniiDemoV1.%s"), NativeClassName));
+	}
 
 	struct FClassDef
 	{
@@ -57,9 +65,9 @@ namespace PlayerClassCanon
 		Def.Stats.Alacrity = 2;
 		Def.Stats.Noesis = 2;
 		Def.Stats.Aegis = 5;
-		Def.Abilities.Add({ FName(TEXT("vigil_step")), LOCTEXT("Ordo_VigilStep", "Vigil Step") });
-		Def.Abilities.Add({ FName(TEXT("ashen_recitation")), LOCTEXT("Ordo_AshenRecitation", "Ashen Recitation") });
-		Def.Abilities.Add({ FName(TEXT("effigy_vow")), LOCTEXT("Ordo_EffigyVow", "Effigy of the Vow") });
+		Def.Abilities.Add({ FName(TEXT("vigil_step")), LOCTEXT("Ordo_VigilStep", "Vigil Step"), TAG_Cooldown_Noetic_VigilStep, NoeticAbilityClass(TEXT("GA_ExistenceShift")) });
+		Def.Abilities.Add({ FName(TEXT("ashen_recitation")), LOCTEXT("Ordo_AshenRecitation", "Ashen Recitation"), TAG_Cooldown_Noetic_AshenRecitation, NoeticAbilityClass(TEXT("GA_MemoryBurn")) });
+		Def.Abilities.Add({ FName(TEXT("effigy_vow")), LOCTEXT("Ordo_EffigyVow", "Effigy of the Vow"), TAG_Cooldown_Noetic_EffigyVow, NoeticAbilityClass(TEXT("GA_AetherBlight")) });
 		return Def;
 	}
 
@@ -83,9 +91,9 @@ namespace PlayerClassCanon
 		Def.Stats.Alacrity = 5;
 		Def.Stats.Noesis = 3;
 		Def.Stats.Aegis = 2;
-		Def.Abilities.Add({ FName(TEXT("censer_lunge")), LOCTEXT("Ignivarum_CenserLunge", "Censer Lunge") });
-		Def.Abilities.Add({ FName(TEXT("censure_lance")), LOCTEXT("Ignivarum_CensureLance", "Censure Lance") });
-		Def.Abilities.Add({ FName(TEXT("second_breath")), LOCTEXT("Ignivarum_SecondBreath", "Second Breath") });
+		Def.Abilities.Add({ FName(TEXT("censer_lunge")), LOCTEXT("Ignivarum_CenserLunge", "Censer Lunge"), TAG_Cooldown_Noetic_CenserLunge, NoeticAbilityClass(TEXT("GA_ExistenceShift")) });
+		Def.Abilities.Add({ FName(TEXT("censure_lance")), LOCTEXT("Ignivarum_CensureLance", "Censure Lance"), TAG_Cooldown_Noetic_CensureLance, NoeticAbilityClass(TEXT("GA_MemoryBurn")) });
+		Def.Abilities.Add({ FName(TEXT("second_breath")), LOCTEXT("Ignivarum_SecondBreath", "Second Breath"), TAG_Cooldown_Noetic_SecondBreath, NoeticAbilityClass(TEXT("GA_TemporalEcho")) });
 		return Def;
 	}
 
@@ -109,9 +117,9 @@ namespace PlayerClassCanon
 		Def.Stats.Alacrity = 4;
 		Def.Stats.Noesis = 5;
 		Def.Stats.Aegis = 1;
-		Def.Abilities.Add({ FName(TEXT("fold")), LOCTEXT("Luminarch_Fold", "Fold") });
-		Def.Abilities.Add({ FName(TEXT("unwriting")), LOCTEXT("Luminarch_Unwriting", "Unwriting") });
-		Def.Abilities.Add({ FName(TEXT("palindrome")), LOCTEXT("Luminarch_Palindrome", "Palindrome") });
+		Def.Abilities.Add({ FName(TEXT("fold")), LOCTEXT("Luminarch_Fold", "Fold"), TAG_Cooldown_Noetic_Fold, NoeticAbilityClass(TEXT("GA_ExistenceShift")) });
+		Def.Abilities.Add({ FName(TEXT("unwriting")), LOCTEXT("Luminarch_Unwriting", "Unwriting"), TAG_Cooldown_Noetic_Unwriting, NoeticAbilityClass(TEXT("GA_MemoryBurn")) });
+		Def.Abilities.Add({ FName(TEXT("palindrome")), LOCTEXT("Luminarch_Palindrome", "Palindrome"), TAG_Cooldown_Noetic_Palindrome, NoeticAbilityClass(TEXT("GA_TemporalEcho")) });
 		return Def;
 	}
 
@@ -153,11 +161,19 @@ namespace PlayerClassCanon
 			FPlayerClassAbilitySlot Slot;
 			Slot.AbilityId = Ability.Id;
 			Slot.DisplayName = Ability.DisplayName;
+			Slot.AbilityTag = Ability.AbilityTag;
+			Slot.AbilityClass = Ability.AbilityClass;
 
 			if (const FPlayerClassAbilitySlot* Previous = PreviousSlots.Find(Ability.Id))
 			{
-				Slot.AbilityTag = Previous->AbilityTag;
-				Slot.AbilityClass = Previous->AbilityClass;
+				if (Previous->AbilityTag.IsValid())
+				{
+					Slot.AbilityTag = Previous->AbilityTag;
+				}
+				if (!Previous->AbilityClass.IsNull())
+				{
+					Slot.AbilityClass = Previous->AbilityClass;
+				}
 			}
 
 			Target.AbilitySlots.Add(Slot);
@@ -318,7 +334,7 @@ namespace PlayerClassCanon
 		{
 			for (FPlayerClassAbilitySlot& Slot : Target.AbilitySlots)
 			{
-				if (Slot.AbilityId.IsNone() || !Slot.DisplayName.IsEmpty())
+				if (Slot.AbilityId.IsNone())
 				{
 					continue;
 				}
@@ -330,8 +346,21 @@ namespace PlayerClassCanon
 						continue;
 					}
 
-					Slot.DisplayName = Ability.DisplayName;
-					bChanged = true;
+					if (Slot.DisplayName.IsEmpty())
+					{
+						Slot.DisplayName = Ability.DisplayName;
+						bChanged = true;
+					}
+					if (!Slot.AbilityTag.IsValid() && Ability.AbilityTag.IsValid())
+					{
+						Slot.AbilityTag = Ability.AbilityTag;
+						bChanged = true;
+					}
+					if (Slot.AbilityClass.IsNull() && !Ability.AbilityClass.IsNull())
+					{
+						Slot.AbilityClass = Ability.AbilityClass;
+						bChanged = true;
+					}
 					break;
 				}
 			}

@@ -9,6 +9,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "AIController.h"
 #include "CombatEnemy.h"
+#include "NoeticArtKits.h"
+#include "NoeticEffigy.h"
 #include "Kismet/GameplayStatics.h"
 #include "StateTreeAsyncExecutionContext.h"
 
@@ -238,7 +240,12 @@ EStateTreeRunStatus FStateTreeSetCharacterSpeedTask::EnterState(FStateTreeExecut
 	FInstanceDataType& InstanceData = Context.GetInstanceData(*this);
 
 	// set the character's max ground speed
-	InstanceData.Character->GetCharacterMovement()->MaxWalkSpeed = InstanceData.Speed;
+	float Speed = InstanceData.Speed;
+	if (const ACombatEnemy* Enemy = Cast<ACombatEnemy>(InstanceData.Character))
+	{
+		Speed *= Enemy->GetNoeticSlowMultiplier();
+	}
+	InstanceData.Character->GetCharacterMovement()->MaxWalkSpeed = Speed;
 
 	return EStateTreeRunStatus::Running;
 }
@@ -259,35 +266,55 @@ EStateTreeRunStatus FStateTreeGetPlayerInfoTask::EnterState(FStateTreeExecutionC
 		
 	// reset the selected target
 	ACharacter* SelectedTarget = nullptr;
+	FVector SelectedLocation = FVector::ZeroVector;
+	float SelectedDistance = 0.0f;
 
 	// iterate through each local player
 	const int32 NumPlayers = UGameplayStatics::GetNumLocalPlayerControllers(InstanceData.Character);
 
 	for (int32 i = 0; i < NumPlayers; ++i)
 	{
-		if (ACharacter* Current = Cast<ACharacter>(UGameplayStatics::GetPlayerPawn(InstanceData.Character, i)))
+		ACharacter* Current = Cast<ACharacter>(UGameplayStatics::GetPlayerPawn(InstanceData.Character, i));
+		if (!Current || !InstanceData.Character)
 		{
-			// compute the distance to the target
-			const float TargetDist = (Current->GetActorLocation() - InstanceData.Character->GetActorLocation()).Size();
+			continue;
+		}
 
-			// is this target within range?
-			if (TargetDist < InstanceData.MaxRange)
+		const FVector EnemyLocation = InstanceData.Character->GetActorLocation();
+		const FVector PlayerLocation = Current->GetActorLocation();
+		float CandidateDistance = FVector::Dist2D(EnemyLocation, PlayerLocation);
+		FVector CandidateLocation = PlayerLocation;
+
+		// effigy_vow: attend the decoy when dd * 0.38 < dp.
+		if (const ANoeticEffigy* Effigy = ANoeticEffigy::FindForOwner(Current))
+		{
+			const float EffigyDistance = FVector::Dist2D(EnemyLocation, Effigy->GetActorLocation());
+			if (EffigyDistance * AeterniiNoeticKits::EffigyAggroDistanceScale < CandidateDistance)
 			{
-				// have we selected a valid target already?
-				if (SelectedTarget)
-				{
-					// randomly switch to the new target
-					if (FMath::RandBool())
-					{
-						SelectedTarget = Current;
-					}
-				}
-				else
-				{
-					// no valid target yet, so choose this one
-					SelectedTarget = Current;
-				}
+				CandidateDistance = EffigyDistance;
+				CandidateLocation = Effigy->GetActorLocation();
 			}
+		}
+
+		if (CandidateDistance >= InstanceData.MaxRange)
+		{
+			continue;
+		}
+
+		if (SelectedTarget)
+		{
+			if (FMath::RandBool())
+			{
+				SelectedTarget = Current;
+				SelectedLocation = CandidateLocation;
+				SelectedDistance = CandidateDistance;
+			}
+		}
+		else
+		{
+			SelectedTarget = Current;
+			SelectedLocation = CandidateLocation;
+			SelectedDistance = CandidateDistance;
 		}
 	}
 
@@ -301,8 +328,8 @@ EStateTreeRunStatus FStateTreeGetPlayerInfoTask::EnterState(FStateTreeExecutionC
 	}
 
 	// set the target location and distance
-	InstanceData.TargetPlayerLocation = SelectedTarget->GetActorLocation();
-	InstanceData.DistanceToTarget = (SelectedTarget->GetActorLocation() - InstanceData.Character->GetActorLocation()).Size();
+	InstanceData.TargetPlayerLocation = SelectedLocation;
+	InstanceData.DistanceToTarget = SelectedDistance;
 
 	// succeed
 	return EStateTreeRunStatus::Succeeded;

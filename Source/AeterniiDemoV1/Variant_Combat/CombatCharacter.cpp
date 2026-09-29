@@ -24,9 +24,15 @@ DEFINE_LOG_CATEGORY(LogCombatCharacter);
 #include "EngineUtils.h"
 #include "Abilities/GameplayAbility.h"
 #include "GA_Dodge.h"
+#include "GA_ExistenceShift.h"
+#include "GA_MemoryBurn.h"
+#include "GA_TemporalEcho.h"
+#include "GA_AetherBlight.h"
+#include "NoeticArtKits.h"
 #include "TimerManager.h"
 #include "Engine/LocalPlayer.h"
 #include "CombatPlayerController.h"
+#include "Net/UnrealNetwork.h"
 #include "UObject/ConstructorHelpers.h"
 
 ACombatCharacter::ACombatCharacter()
@@ -144,6 +150,78 @@ void ACombatCharacter::DoDodge()
 	if (!AbilitySystemComponent->TryActivateAbilityByClass(UGA_Dodge::StaticClass()))
 	{
 		UE_LOG(LogCombatCharacter, Verbose, TEXT("Dodge activate failed (already dodging or GA_Dodge not granted)."));
+	}
+}
+
+void ACombatCharacter::NoeticSlot1Pressed()
+{
+	DoNoeticSlot(0);
+}
+
+void ACombatCharacter::NoeticSlot2Pressed()
+{
+	DoNoeticSlot(1);
+}
+
+void ACombatCharacter::NoeticSlot3Pressed()
+{
+	DoNoeticSlot(2);
+}
+
+void ACombatCharacter::DoNoeticSlot(int32 SlotIndex)
+{
+	const FNoeticKitSpec* Kit = AeterniiNoeticKits::FindKitBySlot(AppliedPlayerClassId, SlotIndex);
+	if (!Kit)
+	{
+		UE_LOG(LogCombatCharacter, Verbose, TEXT("Noetic slot %d has no isometric kit for class '%s'."), SlotIndex, *AppliedPlayerClassId.ToString());
+		return;
+	}
+
+	ActivateNoeticArt(Kit->Art);
+}
+
+void ACombatCharacter::DoExistenceShift()
+{
+	ActivateNoeticArt(ENoeticCanonArt::ExistenceShift);
+}
+
+void ACombatCharacter::DoMemoryBurn()
+{
+	ActivateNoeticArt(ENoeticCanonArt::MemoryBurn);
+}
+
+void ACombatCharacter::DoTemporalEcho()
+{
+	ActivateNoeticArt(ENoeticCanonArt::TemporalEcho);
+}
+
+void ACombatCharacter::DoAetherBlight()
+{
+	ActivateNoeticArt(ENoeticCanonArt::AetherBlight);
+}
+
+void ACombatCharacter::ActivateNoeticArt(ENoeticCanonArt Art)
+{
+	if (!AbilitySystemComponent)
+	{
+		return;
+	}
+
+	UClass* AbilityClass = AeterniiNoeticKits::AbilityClassForArt(Art);
+	if (!AbilityClass)
+	{
+		return;
+	}
+
+	if (!AeterniiNoeticKits::FindKit(AppliedPlayerClassId, Art))
+	{
+		UE_LOG(LogCombatCharacter, Verbose, TEXT("Noetic art has no isometric kit for class '%s'."), *AppliedPlayerClassId.ToString());
+		return;
+	}
+
+	if (!AbilitySystemComponent->TryActivateAbilityByClass(AbilityClass))
+	{
+		UE_LOG(LogCombatCharacter, Verbose, TEXT("Noetic art activate failed (cooldown, missing kit, or not granted)."));
 	}
 }
 
@@ -691,6 +769,12 @@ float ACombatCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dama
 		return 0.0f;
 	}
 
+	// Vigil Step: hurtPlayer multiplies harm by (1 - 0.40). The hit still lands on pack CurrentHP.
+	if (AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(TAG_Status_Noetic_VigilWard))
+	{
+		Damage *= (1.0f - AeterniiNoeticKits::VigilWardHarmRefused);
+	}
+
 	// reduce the current HP
 	CurrentHP -= Damage;
 
@@ -753,6 +837,13 @@ void ACombatCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	SamplePalindromeHistory(DeltaSeconds);
+
+	if (AbilitySystemComponent && AttributeSet && AbilitySystemComponent->HasMatchingGameplayTag(TAG_Status_Noetic_Purge))
+	{
+		AttributeSet->ApplyPurgeDecay(DeltaSeconds);
+	}
+
 	if (IsLockedTargetValid())
 	{
 		UpdateLockOn(DeltaSeconds);
@@ -769,6 +860,7 @@ void ACombatCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	// clear the respawn timer
 	GetWorld()->GetTimerManager().ClearTimer(RespawnTimer);
+	GetWorld()->GetTimerManager().ClearTimer(SecondBreathMoveTimer);
 }
 
 void ACombatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -804,6 +896,19 @@ void ACombatCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		if (DodgeAction)
 		{
 			EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Started, this, &ACombatCharacter::DodgePressed);
+		}
+
+		if (NoeticSlot1Action)
+		{
+			EnhancedInputComponent->BindAction(NoeticSlot1Action, ETriggerEvent::Started, this, &ACombatCharacter::NoeticSlot1Pressed);
+		}
+		if (NoeticSlot2Action)
+		{
+			EnhancedInputComponent->BindAction(NoeticSlot2Action, ETriggerEvent::Started, this, &ACombatCharacter::NoeticSlot2Pressed);
+		}
+		if (NoeticSlot3Action)
+		{
+			EnhancedInputComponent->BindAction(NoeticSlot3Action, ETriggerEvent::Started, this, &ACombatCharacter::NoeticSlot3Pressed);
 		}
   	}
 }
@@ -864,6 +969,7 @@ void ACombatCharacter::ApplyPlayerClassToAttributes(const UPlayerClassData* Clas
 	AttributeSet->InitAttackCooldown(ClassData->AttackCooldown);
 	AttributeSet->InitAttackRange(ClassData->AttackRange);
 	AttributeSet->InitCorruptionRate(ClassData->CorruptionRate);
+	AppliedPlayerClassId = ClassData->ClassId;
 }
 
 void ACombatCharacter::GrantDefaultAbilities()
@@ -878,6 +984,11 @@ void ACombatCharacter::GrantDefaultAbilities()
 	{
 		ToGrant.Add(UGA_Dodge::StaticClass());
 	}
+
+	ToGrant.AddUnique(UGA_ExistenceShift::StaticClass());
+	ToGrant.AddUnique(UGA_MemoryBurn::StaticClass());
+	ToGrant.AddUnique(UGA_TemporalEcho::StaticClass());
+	ToGrant.AddUnique(UGA_AetherBlight::StaticClass());
 
 	for (const TSubclassOf<UGameplayAbility>& AbilityClass : ToGrant)
 	{
@@ -895,5 +1006,74 @@ UAbilitySystemComponent* ACombatCharacter::GetAbilitySystemComponent() const
 bool ACombatCharacter::HasDodgeIFrames() const
 {
 	return AbilitySystemComponent && AbilitySystemComponent->HasMatchingGameplayTag(TAG_Status_Dodge_IFrames);
+}
+
+void ACombatCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ACombatCharacter, AppliedPlayerClassId);
+}
+
+void ACombatCharacter::SamplePalindromeHistory(float DeltaSeconds)
+{
+	PalindromeSampleAccumulator -= DeltaSeconds;
+	if (PalindromeSampleAccumulator > 0.0f)
+	{
+		return;
+	}
+
+	PalindromeSampleAccumulator = AeterniiNoeticKits::PalindromeSampleInterval;
+
+	FNoeticPalindromeSample Sample;
+	Sample.TimeSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0f;
+	Sample.Location = GetActorLocation();
+	Sample.IsometricHealth = AttributeSet ? AttributeSet->GetHealth() : 0.0f;
+	Sample.Corruption = AttributeSet ? AttributeSet->GetCorruption() : 0.0f;
+	PalindromeHistory.Insert(Sample, 0);
+	if (PalindromeHistory.Num() > AeterniiNoeticKits::PalindromeHistoryCap)
+	{
+		PalindromeHistory.SetNum(AeterniiNoeticKits::PalindromeHistoryCap);
+	}
+}
+
+bool ACombatCharacter::FindPalindromeSample(FNoeticPalindromeSample& OutSample) const
+{
+	if (PalindromeHistory.Num() == 0 || !GetWorld())
+	{
+		return false;
+	}
+
+	const float Now = GetWorld()->GetTimeSeconds();
+	OutSample = PalindromeHistory[0];
+	for (const FNoeticPalindromeSample& Sample : PalindromeHistory)
+	{
+		if (Now - Sample.TimeSeconds >= AeterniiNoeticKits::PalindromeRewindSeconds)
+		{
+			OutSample = Sample;
+			break;
+		}
+	}
+	return true;
+}
+
+void ACombatCharacter::ApplySecondBreathMoveMultiplier(float Multiplier, float Duration)
+{
+	if (!bSecondBreathMoveActive)
+	{
+		SecondBreathBaseWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+		GetCharacterMovement()->MaxWalkSpeed = SecondBreathBaseWalkSpeed * Multiplier;
+		bSecondBreathMoveActive = true;
+	}
+
+	GetWorldTimerManager().SetTimer(SecondBreathMoveTimer, this, &ACombatCharacter::ClearSecondBreathMoveMultiplier, Duration, false);
+}
+
+void ACombatCharacter::ClearSecondBreathMoveMultiplier()
+{
+	if (bSecondBreathMoveActive)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = SecondBreathBaseWalkSpeed;
+		bSecondBreathMoveActive = false;
+	}
 }
 

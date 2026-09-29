@@ -59,11 +59,11 @@ struct FPlayerClassStatBlock
 /**
  *  One of up to four GAS ability slots.
  *
- *  AbilityId is the design-reference placeholder (vigil_step, fold, …).
- *  AbilityTag stays empty until Gary lands real Gameplay Tags; Priya binds
- *  HUD cooldown slots to those tags once GAS is available.
- *  AbilityClass is an optional soft path so this type does not depend on
- *  the GameplayAbilities plugin.
+ *  AbilityId is the isometric kit id (vigil_step, fold, …).
+ *  AbilityTag is the kit cooldown tag (Cooldown.Noetic.VigilStep, …).
+ *  Priya binds HUD cooldown slots to AbilityTag.
+ *  AbilityClass is the native art class (/Script/AeterniiDemoV1.GA_ExistenceShift, …).
+ *  Several kits share one art class. The kit id picks the constants at runtime.
  */
 USTRUCT(BlueprintType)
 struct FPlayerClassAbilitySlot
@@ -78,17 +78,11 @@ struct FPlayerClassAbilitySlot
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ability")
 	FText DisplayName;
 
-	/**
-	 *  GAS gameplay tag for this slot. Leave empty — Gary owns real tags.
-	 *  Priya binds class-select HUD cooldown slots to these once they exist.
-	 */
+	/** Kit cooldown tag. Canon apply fills Cooldown.Noetic.<Kit>. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ability")
 	FGameplayTag AbilityTag;
 
-	/**
-	 *  Optional soft class path for a future UGameplayAbility (or a BP child).
-	 *  Unset in C++; Claude Code / Gary fill this in-editor.
-	 */
+	/** Native UGameplayAbility for this kit's canon art. Several kits share one class. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Ability")
 	FSoftClassPath AbilityClass;
 };
@@ -185,8 +179,8 @@ public:
 	FPlayerClassStatBlock Stats;
 
 	/**
-	 *  Up to four GAS ability slots. Canon fills three; a fourth slot is reserved.
-	 *  Tags stay empty until Gary lands GAS tags.
+	 *  Up to four GAS ability slots. Canon fills three kits and their cooldown tags.
+	 *  A fourth slot stays empty. Ordo has no Temporal Echo. Ignivarum and Luminarch have no Aether Blight.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Abilities", meta=(TitleProperty="AbilityId"))
 	TArray<FPlayerClassAbilitySlot> AbilitySlots;

@@ -34,6 +34,7 @@ public class AeterniiDemoV1 : ModuleRules
 			"AeterniiDemoV1/Variant_Combat/AI",
 			"AeterniiDemoV1/Variant_Combat/Animation",
 			"AeterniiDemoV1/Variant_Combat/GAS",
+			"AeterniiDemoV1/Variant_Combat/GAS/Abilities",
 			"AeterniiDemoV1/Variant_Combat/Gameplay",
 			"AeterniiDemoV1/Variant_Combat/Interfaces",
 			"AeterniiDemoV1/Variant_Combat/UI",
